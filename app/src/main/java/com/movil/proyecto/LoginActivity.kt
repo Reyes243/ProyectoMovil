@@ -200,6 +200,8 @@ fun LoginScreen(
                     onClick = {
                         if (username.isNotBlank() && password.isNotBlank()) {
                             Toast.makeText(context, "¡Bienvenido!", Toast.LENGTH_SHORT).show()
+                            val intent = Intent(context, HomeActivity::class.java)
+                            context.startActivity(intent)
                         } else {
                             Toast.makeText(context, "Por favor, llena los campos", Toast.LENGTH_SHORT).show()
                         }

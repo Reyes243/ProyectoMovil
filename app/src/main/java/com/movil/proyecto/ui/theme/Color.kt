@@ -13,5 +13,6 @@ val Pink40 = Color(0xFF7D5260)
 
 val ColorFondoVerdeClaro = Color(0xFFADD9B3)  // #ADD9B3
 val ColorVerdeOlivaOscuro = Color(0xFF657B68) // #657B68
+val ColorVerdeMedio = Color(0xFF829184)      // #829184
 val ColorCremaCampos = Color(0xFFF5F1E3)      // #F5F1E3
 val ColorNaranjaAccion = Color(0xFFE07A5F)    // Terracota
