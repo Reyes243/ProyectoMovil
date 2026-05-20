@@ -1,4 +1,4 @@
-// Archivo: app/src/main/java/com/movil/proyecto/RegisterActivity.kt
+// Archivo: app/src/main/java/com/movil/proyecto/Register.kt
 package com.movil.proyecto
 
 import android.os.Bundle
@@ -48,7 +48,7 @@ import com.movil.proyecto.ui.theme.ColorNaranjaAccion
 import com.movil.proyecto.ui.theme.ColorVerdeOlivaOscuro
 import com.movil.proyecto.ui.theme.ProyectoMovilTheme
 
-class RegisterActivity : ComponentActivity() {
+class Register : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

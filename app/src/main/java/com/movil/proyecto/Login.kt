@@ -1,4 +1,4 @@
-// Archivo: app/src/main/java/com/movil/proyecto/LoginActivity.kt
+// Archivo: app/src/main/java/com/movil/proyecto/Login.kt
 package com.movil.proyecto
 
 import android.content.Intent
@@ -52,7 +52,7 @@ import com.movil.proyecto.ui.theme.ColorNaranjaAccion
 import com.movil.proyecto.ui.theme.ColorVerdeOlivaOscuro
 import com.movil.proyecto.ui.theme.ProyectoMovilTheme
 
-class LoginActivity : ComponentActivity() {
+class Login : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -62,7 +62,7 @@ class LoginActivity : ComponentActivity() {
                     LoginScreen(
                         onBack = { finish() },
                         onNavigateToRegister = {
-                            val intent = Intent(this, RegisterActivity::class.java)
+                            val intent = Intent(this, Register::class.java)
                             startActivity(intent)
                         },
                         modifier = Modifier.padding(innerPadding)
@@ -200,6 +200,8 @@ fun LoginScreen(
                     onClick = {
                         if (username.isNotBlank() && password.isNotBlank()) {
                             Toast.makeText(context, "¡Bienvenido!", Toast.LENGTH_SHORT).show()
+                            val intent = Intent(context, Home::class.java)
+                            context.startActivity(intent)
                         } else {
                             Toast.makeText(context, "Por favor, llena los campos", Toast.LENGTH_SHORT).show()
                         }

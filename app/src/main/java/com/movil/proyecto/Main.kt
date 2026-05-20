@@ -12,7 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.movil.proyecto.ui.theme.ProyectoMovilTheme
 
-class MainActivity : ComponentActivity() {
+class Main : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     WelcomeScreen(
                         onNavigateToLogin = {
-                            val intent = Intent(this, LoginActivity::class.java)
+                            val intent = Intent(this, Login::class.java)
                             startActivity(intent)
                         },
                         modifier = Modifier.padding(innerPadding)
