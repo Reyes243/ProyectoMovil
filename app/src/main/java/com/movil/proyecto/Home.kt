@@ -1,11 +1,13 @@
 
 package com.movil.proyecto
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -20,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,14 +36,25 @@ class Home : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ProyectoMovilTheme {
-                HomeScreen(onLogout = { finish() })
+                HomeScreen(
+                    onLogout = { finish() },
+                    onCategoryClick = { categoryName ->
+                        val intent = Intent(this, PlantList::class.java).apply {
+                            putExtra("CATEGORY_NAME", categoryName)
+                        }
+                        startActivity(intent)
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun HomeScreen(onLogout: () -> Unit) {
+fun HomeScreen(
+    onLogout: () -> Unit,
+    onCategoryClick: (String) -> Unit
+) {
     Scaffold(
         topBar = { HomeHeader(onLogout = onLogout) },
         containerColor = ColorFondoVerdeClaro // #ADD9B3 - El verde de fondo general
@@ -85,7 +99,10 @@ fun HomeScreen(onLogout: () -> Unit) {
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(categories) { category ->
-                    CategoryCard(category)
+                    CategoryCard(
+                        category = category,
+                        onClick = { onCategoryClick(category.name) }
+                    )
                 }
             }
         }
@@ -224,10 +241,12 @@ fun MainBanner() {
 }
 
 @Composable
-fun CategoryCard(category: CategoryItem) {
+fun CategoryCard(category: CategoryItem, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Card(
             modifier = Modifier
@@ -267,6 +286,6 @@ data class CategoryItem(val name: String, val imageRes: String)
 @Composable
 fun HomePreview() {
     ProyectoMovilTheme {
-        HomeScreen(onLogout = {})
+        HomeScreen(onLogout = {}, onCategoryClick = {})
     }
 }
