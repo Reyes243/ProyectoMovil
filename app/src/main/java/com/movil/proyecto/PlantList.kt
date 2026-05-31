@@ -1,6 +1,7 @@
 
 package com.movil.proyecto
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,8 +41,16 @@ class PlantList : ComponentActivity() {
                 PlantListScreen(
                     categoryName = categoryName,
                     onBack = { finish() },
-                    onLogout = { 
-                        finishAffinity() 
+                    onLogout = { finishAffinity() },
+                    onPlantClick = { plantName ->
+                        val intent = Intent(this, PlantDetail::class.java).apply {
+                            putExtra("PLANT_NAME", plantName)
+                        }
+                        startActivity(intent)
+                    },
+                    onNavigateToCart = {
+                        val intent = Intent(this, Cart::class.java)
+                        startActivity(intent)
                     }
                 )
             }
@@ -53,13 +62,16 @@ class PlantList : ComponentActivity() {
 fun PlantListScreen(
     categoryName: String,
     onBack: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onPlantClick: (String) -> Unit,
+    onNavigateToCart: () -> Unit
 ) {
+    val plants = getPlantsByCategory(categoryName)
+
     Scaffold(
         topBar = { 
             Surface(color = ColorVerdeOlivaOscuro, shadowElevation = 4.dp) {
                 Column(modifier = Modifier.padding(top = 44.dp)) {
-                    // Fila 1: Título e iconos
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -75,7 +87,15 @@ fun PlantListScreen(
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Person, contentDescription = "Perfil", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
-                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
+                            Icon(
+                                Icons.Default.ShoppingCart, 
+                                contentDescription = "Carrito", 
+                                tint = ColorCremaCampos, 
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp)
+                                    .size(24.dp)
+                                    .clickable { onNavigateToCart() }
+                            )
                             Icon(
                                 Icons.AutoMirrored.Filled.Logout, 
                                 contentDescription = "Cerrar sesión", 
@@ -88,7 +108,6 @@ fun PlantListScreen(
                         }
                     }
                     
-                    // Fila 2: Flecha regresar y buscador
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -131,7 +150,6 @@ fun PlantListScreen(
                 .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
         ) {
-            // Header del Grid (Título y Filtros)
             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                 Column {
                     Text(
@@ -143,7 +161,6 @@ fun PlantListScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Sección de Filtros (Precio)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -165,14 +182,68 @@ fun PlantListScreen(
                 }
             }
 
-            // Listado de Plantas
-            val dummyPlants = List(10) { 
-                PlantItem("MONSTERA DELICIOSA", "$250.00") 
-            }
-            items(dummyPlants) { plant ->
-                PlantCard(plant)
+            items(plants) { plant ->
+                PlantCard(
+                    plant = plant,
+                    onDetailClick = { onPlantClick(plant.name) }
+                )
             }
         }
+    }
+}
+
+fun getPlantsByCategory(category: String): List<PlantItem> {
+    return when (category) {
+        "PLANTAS DE INTERIOR" -> listOf(
+            PlantItem("MONSTERA DELICIOSA", "$250.00"),
+            PlantItem("POTO (EPIPREMNUM)", "$120.00"),
+            PlantItem("CALATHEA ORNATA", "$310.00"),
+            PlantItem("FICUS LYRATA", "$450.00"),
+            PlantItem("SANSEVIERIA", "$180.00"),
+            PlantItem("ESPATIFILO", "$150.00")
+        )
+        "PLANTAS DE EXTERIOR" -> listOf(
+            PlantItem("LAVANDA", "$80.00"),
+            PlantItem("ROSAL ARBUSTIVO", "$220.00"),
+            PlantItem("GERANIO", "$60.00"),
+            PlantItem("HORTENSIA", "$280.00"),
+            PlantItem("OLIVO PEQUEÑO", "$550.00"),
+            PlantItem("JAZMÍN", "$140.00")
+        )
+        "BAJO MANTENIMIENTO" -> listOf(
+            PlantItem("ALOE VERA", "$90.00"),
+            PlantItem("CACTUS DE ASIENTO", "$110.00"),
+            PlantItem("SUCULENTA MIX", "$45.00"),
+            PlantItem("LENGUA DE SUEGRA", "$170.00"),
+            PlantItem("ÁRBOL DE JADE", "$200.00"),
+            PlantItem("ZAMIOCULCA", "$320.00")
+        )
+        "AROMÁTICAS Y COMESTIBLES" -> listOf(
+            PlantItem("ROMERO", "$50.00"),
+            PlantItem("ALBAHACA", "$40.00"),
+            PlantItem("MENTA", "$45.00"),
+            PlantItem("PEREJIL", "$35.00"),
+            PlantItem("TOMILLO", "$45.00"),
+            PlantItem("ORÉGANO", "$40.00")
+        )
+        "MACETAS Y ACCESORIOS" -> listOf(
+            PlantItem("MACETA DE BARRO", "$120.00"),
+            PlantItem("REGADERA VINTAGE", "$350.00"),
+            PlantItem("SUSTRATO ORGÁNICO", "$95.00"),
+            PlantItem("PALA DE MANO", "$85.00"),
+            PlantItem("TIJERAS DE PODA", "$190.00"),
+            PlantItem("FERTILIZANTE", "$130.00")
+        )
+        "CUIDADOS Y BIENESTAR" -> listOf(
+            PlantItem("HUMIDIFICADOR", "$650.00"),
+            PlantItem("MEDIDOR HUMEDAD", "$210.00"),
+            PlantItem("GUÍA BOTÁNICA", "$280.00"),
+            PlantItem("ACEITE DE NEEM", "$160.00"),
+            PlantItem("JABÓN POTÁSICO", "$140.00")
+        )
+        else -> listOf(
+            PlantItem("PLANTA GENÉRICA", "$100.00")
+        )
     }
 }
 
@@ -190,7 +261,7 @@ fun FilterBox(label: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun PlantCard(plant: PlantItem) {
+fun PlantCard(plant: PlantItem, onDetailClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -200,7 +271,6 @@ fun PlantCard(plant: PlantItem) {
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            // Imagen de la planta
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -233,7 +303,7 @@ fun PlantCard(plant: PlantItem) {
             Spacer(modifier = Modifier.height(10.dp))
             
             Button(
-                onClick = { /* Ir a detalle */ },
+                onClick = onDetailClick,
                 colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
@@ -253,6 +323,6 @@ data class PlantItem(val name: String, val price: String)
 @Composable
 fun PlantListPreview() {
     ProyectoMovilTheme {
-        PlantListScreen(categoryName = "PLANTAS DE INTERIOR", onBack = {}, onLogout = {})
+        PlantListScreen(categoryName = "PLANTAS DE INTERIOR", onBack = {}, onLogout = {}, onPlantClick = {}, onNavigateToCart = {})
     }
 }

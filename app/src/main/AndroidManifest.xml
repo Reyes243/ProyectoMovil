@@ -34,6 +34,15 @@
         <activity
             android:name=".PlantList"
             android:exported="false" />
+        <activity
+            android:name=".PlantDetail"
+            android:exported="false" />
+        <activity
+            android:name=".Cart"
+            android:exported="false" />
+        <activity
+            android:name=".Checkout"
+            android:exported="false" />
     </application>
 
 </manifest>

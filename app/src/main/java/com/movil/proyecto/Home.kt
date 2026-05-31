@@ -43,6 +43,10 @@ class Home : ComponentActivity() {
                             putExtra("CATEGORY_NAME", categoryName)
                         }
                         startActivity(intent)
+                    },
+                    onNavigateToCart = {
+                        val intent = Intent(this, Cart::class.java)
+                        startActivity(intent)
                     }
                 )
             }
@@ -53,10 +57,11 @@ class Home : ComponentActivity() {
 @Composable
 fun HomeScreen(
     onLogout: () -> Unit,
-    onCategoryClick: (String) -> Unit
+    onCategoryClick: (String) -> Unit,
+    onNavigateToCart: () -> Unit
 ) {
     Scaffold(
-        topBar = { HomeHeader(onLogout = onLogout) },
+        topBar = { HomeHeader(onLogout = onLogout, onNavigateToCart = onNavigateToCart) },
         containerColor = ColorFondoVerdeClaro // #ADD9B3 - El verde de fondo general
     ) { innerPadding ->
         Column(
@@ -110,7 +115,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeHeader(onLogout: () -> Unit) {
+fun HomeHeader(onLogout: () -> Unit, onNavigateToCart: () -> Unit) {
     Surface(
         color = ColorVerdeOlivaOscuro, // #657B68 - Fondo oscuro para el header
         shadowElevation = 4.dp
@@ -132,7 +137,7 @@ fun HomeHeader(onLogout: () -> Unit) {
                     color = ColorCremaCampos // #F5F1E3 - Letras claras
                 )
                 Row {
-                    IconButton(onClick = { /* Carrito */ }) {
+                    IconButton(onClick = onNavigateToCart) {
                         Icon(
                             Icons.Default.ShoppingCart, 
                             contentDescription = "Carrito", 
@@ -286,6 +291,6 @@ data class CategoryItem(val name: String, val imageRes: String)
 @Composable
 fun HomePreview() {
     ProyectoMovilTheme {
-        HomeScreen(onLogout = {}, onCategoryClick = {})
+        HomeScreen(onLogout = {}, onCategoryClick = {}, onNavigateToCart = {})
     }
 }
