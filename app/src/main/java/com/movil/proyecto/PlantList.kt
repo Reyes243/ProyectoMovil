@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,6 +54,10 @@ class PlantList : ComponentActivity() {
                     onNavigateToCart = {
                         val intent = Intent(this, Cart::class.java)
                         startActivity(intent)
+                    },
+                    onNavigateToAccount = {
+                        val intent = Intent(this, Account::class.java)
+                        startActivity(intent)
                     }
                 )
             }
@@ -64,7 +71,8 @@ fun PlantListScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onPlantClick: (String) -> Unit,
-    onNavigateToCart: () -> Unit
+    onNavigateToCart: () -> Unit,
+    onNavigateToAccount: () -> Unit
 ) {
     val plants = getPlantsByCategory(categoryName)
 
@@ -86,7 +94,15 @@ fun PlantListScreen(
                             color = ColorCremaCampos
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Person, contentDescription = "Perfil", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
+                            Icon(
+                                Icons.Default.Person, 
+                                contentDescription = "Perfil", 
+                                tint = ColorCremaCampos, 
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp)
+                                    .size(24.dp)
+                                    .clickable { onNavigateToAccount() }
+                            )
                             Icon(
                                 Icons.Default.ShoppingCart, 
                                 contentDescription = "Carrito", 
@@ -195,54 +211,54 @@ fun PlantListScreen(
 fun getPlantsByCategory(category: String): List<PlantItem> {
     return when (category) {
         "PLANTAS DE INTERIOR" -> listOf(
-            PlantItem("MONSTERA DELICIOSA", "$250.00"),
-            PlantItem("POTO (EPIPREMNUM)", "$120.00"),
-            PlantItem("CALATHEA ORNATA", "$310.00"),
-            PlantItem("FICUS LYRATA", "$450.00"),
-            PlantItem("SANSEVIERIA", "$180.00"),
-            PlantItem("ESPATIFILO", "$150.00")
+            PlantItem("MONSTERA DELICIOSA", "$250.00", R.drawable.monstera_1),
+            PlantItem("POTO (EPIPREMNUM)", "$120.00", R.drawable.planta_1),
+            PlantItem("CALATHEA ORNATA", "$310.00", R.drawable.cat_interior),
+            PlantItem("FICUS LYRATA", "$450.00", R.drawable.planta_2),
+            PlantItem("SANSEVIERIA", "$180.00", R.drawable.cat_interior),
+            PlantItem("ESPATIFILO", "$150.00", R.drawable.planta_1)
         )
         "PLANTAS DE EXTERIOR" -> listOf(
-            PlantItem("LAVANDA", "$80.00"),
-            PlantItem("ROSAL ARBUSTIVO", "$220.00"),
-            PlantItem("GERANIO", "$60.00"),
-            PlantItem("HORTENSIA", "$280.00"),
-            PlantItem("OLIVO PEQUEÑO", "$550.00"),
-            PlantItem("JAZMÍN", "$140.00")
+            PlantItem("LAVANDA", "$80.00", R.drawable.cat_exterior),
+            PlantItem("ROSAL ARBUSTIVO", "$220.00", R.drawable.planta_1),
+            PlantItem("GERANIO", "$60.00", R.drawable.planta_2),
+            PlantItem("HORTENSIA", "$280.00", R.drawable.cat_exterior),
+            PlantItem("OLIVO PEQUEÑO", "$550.00", R.drawable.planta_1),
+            PlantItem("JAZMÍN", "$140.00", R.drawable.cat_exterior)
         )
         "BAJO MANTENIMIENTO" -> listOf(
-            PlantItem("ALOE VERA", "$90.00"),
-            PlantItem("CACTUS DE ASIENTO", "$110.00"),
-            PlantItem("SUCULENTA MIX", "$45.00"),
-            PlantItem("LENGUA DE SUEGRA", "$170.00"),
-            PlantItem("ÁRBOL DE JADE", "$200.00"),
-            PlantItem("ZAMIOCULCA", "$320.00")
+            PlantItem("ALOE VERA", "$90.00", R.drawable.cat_bajo),
+            PlantItem("CACTUS DE ASIENTO", "$110.00", R.drawable.planta_2),
+            PlantItem("SUCULENTA MIX", "$45.00", R.drawable.planta_1),
+            PlantItem("LENGUA DE SUEGRA", "$170.00", R.drawable.cat_bajo),
+            PlantItem("ÁRBOL DE JADE", "$200.00", R.drawable.planta_2),
+            PlantItem("ZAMIOCULCA", "$320.00", R.drawable.cat_bajo)
         )
         "AROMÁTICAS Y COMESTIBLES" -> listOf(
-            PlantItem("ROMERO", "$50.00"),
-            PlantItem("ALBAHACA", "$40.00"),
-            PlantItem("MENTA", "$45.00"),
-            PlantItem("PEREJIL", "$35.00"),
-            PlantItem("TOMILLO", "$45.00"),
-            PlantItem("ORÉGANO", "$40.00")
+            PlantItem("ROMERO", "$50.00", R.drawable.cat_aromatica),
+            PlantItem("ALBAHACA", "$40.00", R.drawable.planta_1),
+            PlantItem("MENTA", "$45.00", R.drawable.planta_2),
+            PlantItem("PEREJIL", "$35.00", R.drawable.cat_aromatica),
+            PlantItem("TOMILLO", "$45.00", R.drawable.planta_1),
+            PlantItem("ORÉGANO", "$40.00", R.drawable.cat_aromatica)
         )
         "MACETAS Y ACCESORIOS" -> listOf(
-            PlantItem("MACETA DE BARRO", "$120.00"),
-            PlantItem("REGADERA VINTAGE", "$350.00"),
-            PlantItem("SUSTRATO ORGÁNICO", "$95.00"),
-            PlantItem("PALA DE MANO", "$85.00"),
-            PlantItem("TIJERAS DE PODA", "$190.00"),
-            PlantItem("FERTILIZANTE", "$130.00")
+            PlantItem("MACETA DE BARRO", "$120.00", R.drawable.cat_macetas),
+            PlantItem("REGADERA VINTAGE", "$350.00", R.drawable.planta_1),
+            PlantItem("SUSTRATO ORGÁNICO", "$95.00", R.drawable.sustrato),
+            PlantItem("PALA DE MANO", "$85.00", R.drawable.cat_macetas),
+            PlantItem("TIJERAS DE PODA", "$190.00", R.drawable.planta_2),
+            PlantItem("FERTILIZANTE", "$130.00", R.drawable.cat_macetas)
         )
         "CUIDADOS Y BIENESTAR" -> listOf(
-            PlantItem("HUMIDIFICADOR", "$650.00"),
-            PlantItem("MEDIDOR HUMEDAD", "$210.00"),
-            PlantItem("GUÍA BOTÁNICA", "$280.00"),
-            PlantItem("ACEITE DE NEEM", "$160.00"),
-            PlantItem("JABÓN POTÁSICO", "$140.00")
+            PlantItem("HUMIDIFICADOR", "$650.00", R.drawable.cat_cuidados),
+            PlantItem("MEDIDOR HUMEDAD", "$210.00", R.drawable.planta_1),
+            PlantItem("GUÍA BOTÁNICA", "$280.00", R.drawable.cat_cuidados),
+            PlantItem("ACEITE DE NEEM", "$160.00", R.drawable.planta_2),
+            PlantItem("JABÓN POTÁSICO", "$140.00", R.drawable.cat_cuidados)
         )
         else -> listOf(
-            PlantItem("PLANTA GENÉRICA", "$100.00")
+            PlantItem("PLANTA GENÉRICA", "$100.00", R.drawable.logo)
         )
     }
 }
@@ -276,11 +292,14 @@ fun PlantCard(plant: PlantItem, onDetailClick: () -> Unit) {
                     .fillMaxWidth()
                     .aspectRatio(1f),
                 shape = RoundedCornerShape(12.dp),
-                color = Color.White.copy(alpha = 0.5f)
+                color = Color.White
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("🌿", fontSize = 48.sp)
-                }
+                Image(
+                    painter = painterResource(id = plant.imageRes),
+                    contentDescription = plant.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             }
             
             Spacer(modifier = Modifier.height(10.dp))
@@ -317,12 +336,12 @@ fun PlantCard(plant: PlantItem, onDetailClick: () -> Unit) {
     }
 }
 
-data class PlantItem(val name: String, val price: String)
+data class PlantItem(val name: String, val price: String, val imageRes: Int)
 
 @Preview(showBackground = true)
 @Composable
 fun PlantListPreview() {
     ProyectoMovilTheme {
-        PlantListScreen(categoryName = "PLANTAS DE INTERIOR", onBack = {}, onLogout = {}, onPlantClick = {}, onNavigateToCart = {})
+        PlantListScreen(categoryName = "PLANTAS DE INTERIOR", onBack = {}, onLogout = {}, onPlantClick = {}, onNavigateToCart = {}, onNavigateToAccount = {})
     }
 }

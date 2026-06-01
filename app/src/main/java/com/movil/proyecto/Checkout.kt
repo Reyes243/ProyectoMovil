@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -26,7 +28,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,6 +54,10 @@ class Checkout : ComponentActivity() {
                         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
                         startActivity(intent)
                         finish()
+                    },
+                    onNavigateToAccount = {
+                        val intent = Intent(this, Account::class.java)
+                        startActivity(intent)
                     }
                 )
             }
@@ -61,13 +69,21 @@ class Checkout : ComponentActivity() {
 fun CheckoutScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    onNavigateToAccount: () -> Unit
 ) {
     val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf("") }
+    
+    // Estados para Información de Pago
+    var email by remember { mutableStateOf("") }
+    var cardName by remember { mutableStateOf("") }
+    var cardNumber by remember { mutableStateOf("") }
+    var cvv by remember { mutableStateOf("") }
+    var expiration by remember { mutableStateOf("") }
+    var billingAddress by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
+    var postalCode by remember { mutableStateOf("") }
+    var country by remember { mutableStateOf("México") }
     
     val cartItems = CartManager.items
     val total = CartManager.getTotal()
@@ -90,17 +106,21 @@ fun CheckoutScreen(
                             color = ColorCremaCampos
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Person, contentDescription = "Perfil", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
+                            IconButton(onClick = onNavigateToAccount) {
+                                Icon(
+                                    Icons.Default.Person, 
+                                    contentDescription = "Perfil", 
+                                    tint = ColorCremaCampos
+                                )
+                            }
                             Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
-                            Icon(
-                                Icons.AutoMirrored.Filled.Logout, 
-                                contentDescription = "Cerrar sesión", 
-                                tint = ColorCremaCampos,
-                                modifier = Modifier
-                                    .padding(horizontal = 8.dp)
-                                    .size(24.dp)
-                                    .clickable { onLogout() }
-                            )
+                            IconButton(onClick = onLogout) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Logout, 
+                                    contentDescription = "Cerrar sesión", 
+                                    tint = ColorCremaCampos
+                                )
+                            }
                         }
                     }
                     
@@ -149,7 +169,7 @@ fun CheckoutScreen(
                 color = ColorCremaCampos
             ) {
                 Text(
-                    text = "CONFIRMAR COMPRA",
+                    text = "DETALLES DE PAGO",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.Black,
@@ -160,63 +180,113 @@ fun CheckoutScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Resumen del pedido
+            // Resumen del pedido con imágenes
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Resumen de tu pedido", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    cartItems.forEach { item ->
-                        Surface(
-                            color = Color.White.copy(alpha = 0.5f), 
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        ) {
-                            Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Surface(modifier = Modifier.size(50.dp), shape = RoundedCornerShape(8.dp), color = Color.White) {
-                                    Box(contentAlignment = Alignment.Center) { Text("🌿") }
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(item.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                    Text("Cantidad: ${item.quantity}", fontSize = 11.sp, color = Color.Gray)
-                                }
-                                Text(item.price, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-                        }
-                    }
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text("Resumen de tu pedido", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
+                    cartItems.forEach { item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(modifier = Modifier.size(50.dp), shape = RoundedCornerShape(8.dp), color = Color.White) {
+                                Image(
+                                    painter = painterResource(id = item.imageRes),
+                                    null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("Cant: ${item.quantity}", fontSize = 11.sp, color = Color.Gray)
+                            }
+                            Text(item.price, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    PaymentSummaryRow("Subtotal:", "$ ${String.format("%.2f", total)}")
+                    PaymentSummaryRow("Envío:", "$ 0.00")
+                    PaymentSummaryRow("IVA:", "Incluido")
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Total:", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                        Text("$ ${String.format("%.2f", total)}", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                        Text("TOTAL:", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                        Text("$ ${String.format("%.2f", total)}", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Información de envío
+            // Información del método de pago
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Información de envío", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text("Ingrese los datos de su método de pago", fontSize = 12.sp, color = Color.Gray)
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     
-                    CheckoutField(label = "Nombre", value = name, onValueChange = { name = it }, placeholder = "Tu nombre completo")
-                    CheckoutField(label = "Dirección", value = address, onValueChange = { address = it }, placeholder = "Calle, número, colonia")
-                    CheckoutField(label = "Ciudad", value = city, onValueChange = { city = it }, placeholder = "Ciudad")
-                    CheckoutField(label = "Teléfono", value = phone, onValueChange = { phone = it }, placeholder = "Ej. 612 123 4567")
+                    CheckoutField(label = "Correo", value = email, onValueChange = { email = it }, placeholder = "Tucorreo@ejemplo.com")
+                    CheckoutField(label = "Nombre en tarjeta", value = cardName, onValueChange = { cardName = it }, placeholder = "Nombre que aparece en tarjeta")
+                    CheckoutField(label = "Número de tarjeta", value = cardNumber, onValueChange = { cardNumber = it }, placeholder = "1111 1111 1111 1111")
+                    
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            CheckoutField(label = "CVV", value = cvv, onValueChange = { cvv = it }, placeholder = "• • •")
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            CheckoutField(label = "Expiración", value = expiration, onValueChange = { expiration = it }, placeholder = "MM/AA")
+                        }
+                    }
+                    
+                    CheckoutField(label = "Dirección de facturación", value = billingAddress, onValueChange = { billingAddress = it }, placeholder = "Calle, numero")
+                    
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(modifier = Modifier.weight(1.2f)) {
+                            CheckoutField(label = "Ciudad", value = city, onValueChange = { city = it }, placeholder = "Ciudad")
+                        }
+                        Box(modifier = Modifier.weight(0.8f)) {
+                            CheckoutField(label = "Codigo Postal", value = postalCode, onValueChange = { postalCode = it }, placeholder = "00000")
+                        }
+                    }
+                    
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Text("Pais", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = country,
+                            onValueChange = { country = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = ColorVerdeOlivaOscuro,
+                                unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)
+                            ),
+                            singleLine = true
+                        )
+                    }
                 }
             }
 
@@ -236,8 +306,8 @@ fun CheckoutScreen(
 
             Button(
                 onClick = {
-                    if (name.isBlank() || address.isBlank() || city.isBlank() || phone.isBlank()) {
-                        Toast.makeText(context, "Por favor, completa todos los campos de envío", Toast.LENGTH_SHORT).show()
+                    if (email.isBlank() || cardName.isBlank() || cardNumber.isBlank() || cvv.isBlank() || expiration.isBlank() || billingAddress.isBlank() || city.isBlank() || postalCode.isBlank()) {
+                        Toast.makeText(context, "Por favor, completa todos los campos de pago", Toast.LENGTH_SHORT).show()
                     } else {
                         onConfirm()
                     }
@@ -251,6 +321,17 @@ fun CheckoutScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+fun PaymentSummaryRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Text(value, fontSize = 16.sp, color = if(value == "Incluido") Color.Gray else Color.Black)
     }
 }
 
@@ -280,6 +361,6 @@ fun CheckoutField(label: String, value: String, onValueChange: (String) -> Unit,
 @Composable
 fun CheckoutPreview() {
     ProyectoMovilTheme {
-        CheckoutScreen(onBack = {}, onLogout = {}, onConfirm = {})
+        CheckoutScreen(onBack = {}, onLogout = {}, onConfirm = {}, onNavigateToAccount = {})
     }
 }

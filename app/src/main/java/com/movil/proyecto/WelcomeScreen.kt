@@ -1,5 +1,6 @@
 package com.movil.proyecto
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,23 +45,14 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit, modifier: Modifier = Modifier) 
     ) {
 
         // =========================================================================
-        // ESPACIO PARA TU IMAGEN / LOGOTIPO
-        // Cuando tengas tu imagen lista en res/drawable, cambia este Box por:
-        // Image(painter = painterResource(id = R.drawable.tu_imagen), contentDescription = "Logo")
+        // LOGOTIPO DE RAÍZ VIVA
         // =========================================================================
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Logo",
             modifier = Modifier
-                .size(140.dp)
-                .background(ColorVerdeOlivaOscuro.copy(alpha = 0.15f), shape = RoundedCornerShape(28.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "",
-                color = ColorVerdeOlivaOscuro,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
-        }
+                .size(160.dp)
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 

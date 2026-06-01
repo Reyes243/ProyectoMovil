@@ -43,6 +43,27 @@
         <activity
             android:name=".Checkout"
             android:exported="false" />
+        <activity
+            android:name=".Account"
+            android:exported="false" />
+        <activity
+            android:name=".PersonalData"
+            android:exported="false" />
+        <activity
+            android:name=".AddProduct"
+            android:exported="false" />
+        <activity
+            android:name=".Reports"
+            android:exported="false" />
+        <activity
+            android:name=".MyPurchases"
+            android:exported="false" />
+        <activity
+            android:name=".OrderTicket"
+            android:exported="false" />
+        <activity
+            android:name=".OrderTracking"
+            android:exported="false" />
     </application>
 
 </manifest>
