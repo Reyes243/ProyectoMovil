@@ -46,6 +46,9 @@ class PlantDetail : ComponentActivity() {
                     onBack = { finish() },
                     onLogout = { 
                         UserManager.logout()
+                        val intent = Intent(this, Login::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
                         finish()
                     },
                     onNavigateToCart = { startActivity(Intent(this, Cart::class.java)) },
@@ -69,14 +72,8 @@ fun PlantDetailScreen(
     val isLoggedIn = UserManager.isLoggedIn
     var quantity by remember { mutableStateOf(1) }
     
-    val categories = listOf("PLANTAS DE INTERIOR", "PLANTAS DE EXTERIOR", "BAJO MANTENIMIENTO", "AROMÁTICAS Y COMESTIBLES", "MACETAS Y ACCESORIOS", "CUIDADOS Y BIENESTAR")
-    var foundItem: PlantItem? = null
-    for (cat in categories) {
-        foundItem = getPlantsByCategory(cat).find { it.name == plantName }
-        if (foundItem != null) break
-    }
-    
-    val item = foundItem ?: PlantItem(plantName, "$100.00", R.drawable.logo)
+    // Obtenemos la planta desde el catálogo centralizado
+    val item = ProductManager.catalog.find { it.name == plantName } ?: PlantItem(plantName, "$100.00", R.drawable.logo)
     val plantInfo = getPlantDetailData(plantName)
     val context = LocalContext.current
     

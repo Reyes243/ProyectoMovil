@@ -47,6 +47,9 @@
             android:name=".PersonalData"
             android:exported="false" />
         <activity
+            android:name=".MyProducts"
+            android:exported="false" />
+        <activity
             android:name=".AddProduct"
             android:exported="false" />
         <activity

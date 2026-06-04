@@ -7,15 +7,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -23,7 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -32,13 +31,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.movil.proyecto.ui.theme.*
 
-class Account : ComponentActivity() {
+class MyProducts : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             ProyectoMovilTheme {
-                AccountScreen(
+                MyProductsScreen(
                     onBack = { finish() },
                     onLogout = { 
                         UserManager.logout()
@@ -47,22 +46,16 @@ class Account : ComponentActivity() {
                         startActivity(intent)
                         finish()
                     },
-                    onNavigateToCart = { startActivity(Intent(this, Cart::class.java)) },
-                    onOptionClick = { option ->
-                        when (option) {
-                            "DATOS PERSONALES" -> startActivity(Intent(this, PersonalData::class.java))
-                            "MIS PRODUCTOS" -> startActivity(Intent(this, MyProducts::class.java))
-                            "MIS COMPRAS" -> startActivity(Intent(this, MyPurchases::class.java))
-                            "REPORTES" -> startActivity(Intent(this, Reports::class.java))
-                            "CERRAR SESION" -> {
-                                UserManager.logout()
-                                val intent = Intent(this, Login::class.java)
-                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                startActivity(intent)
-                                finish()
-                            }
-                            "ELIMINAR CUENTA" -> { /* Lógica */ }
+                    onAddProduct = {
+                        val intent = Intent(this, AddProduct::class.java)
+                        startActivity(intent)
+                    },
+                    onEditProduct = { plantName ->
+                        val intent = Intent(this, AddProduct::class.java).apply {
+                            putExtra("EDIT_MODE", true)
+                            putExtra("PLANT_NAME", plantName)
                         }
+                        startActivity(intent)
                     }
                 )
             }
@@ -71,12 +64,14 @@ class Account : ComponentActivity() {
 }
 
 @Composable
-fun AccountScreen(
+fun MyProductsScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
-    onNavigateToCart: () -> Unit,
-    onOptionClick: (String) -> Unit
+    onAddProduct: () -> Unit,
+    onEditProduct: (String) -> Unit
 ) {
+    val userProducts = ProductManager.getUserProducts()
+
     Scaffold(
         topBar = {
             Surface(color = ColorVerdeOlivaOscuro, shadowElevation = 4.dp) {
@@ -89,15 +84,14 @@ fun AccountScreen(
                         Text(text = "Raíz Viva", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorCremaCampos)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Person, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
-                            Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp).clickable { onNavigateToCart() })
+                            Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
                             Icon(Icons.AutoMirrored.Filled.Logout, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp).clickable { onLogout() })
                         }
                     }
-                    
                     Row(modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = ColorCremaCampos) }
                         OutlinedTextField(
-                            value = "", onValueChange = {}, placeholder = { Text("Buscar plantas...", fontSize = 14.sp) },
+                            value = "", onValueChange = {}, placeholder = { Text("Buscar...", fontSize = 14.sp) },
                             leadingIcon = { Icon(Icons.Default.Search, null) },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(24.dp),
@@ -111,23 +105,36 @@ fun AccountScreen(
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
-            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = ColorCremaCampos) {
-                Text("MI CUENTA", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("MIS PRODUCTOS", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                Button(
+                    onClick = onAddProduct,
+                    colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("AGREGAR", fontSize = 12.sp)
+                }
             }
-            Spacer(modifier = Modifier.height(24.dp))
 
-            val options = listOf(
-                AccountOption("DATOS PERSONALES", Icons.Default.Badge),
-                AccountOption("MIS PRODUCTOS", Icons.Default.Inventory),
-                AccountOption("MIS COMPRAS", Icons.Default.ShoppingBag),
-                AccountOption("REPORTES", Icons.AutoMirrored.Filled.Assignment),
-                AccountOption("CERRAR SESION", Icons.AutoMirrored.Filled.Logout),
-                AccountOption("ELIMINAR CUENTA", Icons.Default.NoAccounts)
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            LazyVerticalGrid(columns = GridCells.Fixed(2), verticalArrangement = Arrangement.spacedBy(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(options) { option ->
-                    AccountMenuCard(option) { onOptionClick(option.title) }
+            if (userProducts.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Aún no has agregado productos.", color = Color.Gray, textAlign = TextAlign.Center)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(userProducts) { product ->
+                        UserProductRow(product, onEdit = { onEditProduct(product.name) }, onDelete = { ProductManager.deleteProduct(product.name) })
+                    }
                 }
             }
         }
@@ -135,20 +142,32 @@ fun AccountScreen(
 }
 
 @Composable
-fun AccountMenuCard(option: AccountOption, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clickable { onClick() }, shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)) {
-        Column(modifier = Modifier.fillMaxSize().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(imageVector = option.icon, contentDescription = null, tint = ColorNaranjaAccion, modifier = Modifier.size(60.dp))
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = option.title, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = ColorVerdeOlivaOscuro)
+fun UserProductRow(product: PlantItem, onEdit: () -> Unit, onDelete: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
+    ) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(modifier = Modifier.size(60.dp), shape = RoundedCornerShape(8.dp), color = Color.White) {
+                Image(painter = painterResource(id = product.imageRes), null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(product.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(product.category, fontSize = 11.sp, color = Color.Gray)
+                Text(product.price, fontWeight = FontWeight.ExtraBold, color = ColorVerdeOlivaOscuro)
+            }
+            Row {
+                IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, null, tint = Color.Blue) }
+                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, null, tint = Color.Red) }
+            }
         }
     }
 }
 
-data class AccountOption(val title: String, val icon: ImageVector)
-
 @Preview(showBackground = true)
 @Composable
-fun AccountPreview() {
-    ProyectoMovilTheme { AccountScreen(onBack = {}, onLogout = {}, onNavigateToCart = {}, onOptionClick = {}) }
+fun MyProductsPreview() {
+    ProyectoMovilTheme { MyProductsScreen({}, {}, {}, {}) }
 }

@@ -85,7 +85,7 @@ fun PlantListScreen(
     onNavigateToLogin: () -> Unit
 ) {
     val isLoggedIn = UserManager.isLoggedIn
-    val plants = getPlantsByCategory(categoryName)
+    val plants = ProductManager.getProductsByCategory(categoryName)
 
     Scaffold(
         topBar = { 
@@ -152,61 +152,6 @@ fun PlantListScreen(
     }
 }
 
-fun getPlantsByCategory(category: String): List<PlantItem> {
-    return when (category) {
-        "PLANTAS DE INTERIOR" -> listOf(
-            PlantItem("MONSTERA DELICIOSA", "$250.00", R.drawable.monstera_1),
-            PlantItem("POTO (EPIPREMNUM)", "$120.00", R.drawable.planta_1),
-            PlantItem("CALATHEA ORNATA", "$310.00", R.drawable.cat_interior),
-            PlantItem("FICUS LYRATA", "$450.00", R.drawable.planta_2),
-            PlantItem("SANSEVIERIA", "$180.00", R.drawable.cat_interior),
-            PlantItem("ESPATIFILO", "$150.00", R.drawable.planta_1)
-        )
-        "PLANTAS DE EXTERIOR" -> listOf(
-            PlantItem("LAVANDA", "$80.00", R.drawable.cat_exterior),
-            PlantItem("ROSAL ARBUSTIVO", "$220.00", R.drawable.planta_1),
-            PlantItem("GERANIO", "$60.00", R.drawable.planta_2),
-            PlantItem("HORTENSIA", "$280.00", R.drawable.cat_exterior),
-            PlantItem("OLIVO PEQUEÑO", "$550.00", R.drawable.planta_1),
-            PlantItem("JAZMÍN", "$140.00", R.drawable.cat_exterior)
-        )
-        "BAJO MANTENIMIENTO" -> listOf(
-            PlantItem("ALOE VERA", "$90.00", R.drawable.cat_bajo),
-            PlantItem("CACTUS DE ASIENTO", "$110.00", R.drawable.planta_2),
-            PlantItem("SUCULENTA MIX", "$45.00", R.drawable.planta_1),
-            PlantItem("LENGUA DE SUEGRA", "$170.00", R.drawable.cat_bajo),
-            PlantItem("ÁRBOL DE JADE", "$200.00", R.drawable.planta_2),
-            PlantItem("ZAMIOCULCA", "$320.00", R.drawable.cat_bajo)
-        )
-        "AROMÁTICAS Y COMESTIBLES" -> listOf(
-            PlantItem("ROMERO", "$50.00", R.drawable.cat_aromatica),
-            PlantItem("ALBAHACA", "$40.00", R.drawable.planta_1),
-            PlantItem("MENTA", "$45.00", R.drawable.planta_2),
-            PlantItem("PEREJIL", "$35.00", R.drawable.cat_aromatica),
-            PlantItem("TOMILLO", "$45.00", R.drawable.planta_1),
-            PlantItem("ORÉGANO", "$40.00", R.drawable.cat_aromatica)
-        )
-        "MACETAS Y ACCESORIOS" -> listOf(
-            PlantItem("MACETA DE BARRO", "$120.00", R.drawable.cat_macetas),
-            PlantItem("REGADERA VINTAGE", "$350.00", R.drawable.planta_1),
-            PlantItem("SUSTRATO ORGÁNICO", "$95.00", R.drawable.sustrato),
-            PlantItem("PALA DE MANO", "$85.00", R.drawable.cat_macetas),
-            PlantItem("TIJERAS DE PODA", "$190.00", R.drawable.planta_2),
-            PlantItem("FERTILIZANTE", "$130.00", R.drawable.cat_macetas)
-        )
-        "CUIDADOS Y BIENESTAR" -> listOf(
-            PlantItem("HUMIDIFICADOR", "$650.00", R.drawable.cat_cuidados),
-            PlantItem("MEDIDOR HUMEDAD", "$210.00", R.drawable.planta_1),
-            PlantItem("GUÍA BOTÁNICA", "$280.00", R.drawable.cat_cuidados),
-            PlantItem("ACEITE DE NEEM", "$160.00", R.drawable.planta_2),
-            PlantItem("JABÓN POTÁSICO", "$140.00", R.drawable.cat_cuidados)
-        )
-        else -> listOf(
-            PlantItem("PLANTA GENÉRICA", "$100.00", R.drawable.logo)
-        )
-    }
-}
-
 @Composable
 fun FilterBox(label: String, modifier: Modifier = Modifier) {
     Surface(modifier = modifier.height(36.dp), shape = RoundedCornerShape(8.dp), color = ColorCremaCampos) {
@@ -234,7 +179,13 @@ fun PlantCard(plant: PlantItem, onDetailClick: () -> Unit) {
     }
 }
 
-data class PlantItem(val name: String, val price: String, val imageRes: Int)
+data class PlantItem(
+    val name: String, 
+    val price: String, 
+    val imageRes: Int, 
+    val category: String = "",
+    val isUserAdded: Boolean = false
+)
 
 @Preview(showBackground = true)
 @Composable

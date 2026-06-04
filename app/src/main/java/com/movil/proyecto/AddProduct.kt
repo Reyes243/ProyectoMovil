@@ -3,6 +3,7 @@ package com.movil.proyecto
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,10 +35,15 @@ import com.movil.proyecto.ui.theme.*
 class AddProduct : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val editMode = intent.getBooleanExtra("EDIT_MODE", false)
+        val plantName = intent.getStringExtra("PLANT_NAME") ?: ""
+        
         enableEdgeToEdge()
         setContent {
             ProyectoMovilTheme {
                 AddProductScreen(
+                    editMode = editMode,
+                    existingPlantName = plantName,
                     onBack = { finish() },
                     onLogout = { 
                         UserManager.logout()
@@ -53,13 +60,18 @@ class AddProduct : ComponentActivity() {
 
 @Composable
 fun AddProductScreen(
+    editMode: Boolean = false,
+    existingPlantName: String = "",
     onBack: () -> Unit,
     onLogout: () -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var price by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Planta de interior") }
+    val context = LocalContext.current
+    val existingProduct = if (editMode) ProductManager.catalog.find { it.name == existingPlantName } else null
+
+    var name by remember { mutableStateOf(existingProduct?.name ?: "") }
+    var price by remember { mutableStateOf(existingProduct?.price ?: "") }
+    var description by remember { mutableStateOf("") } // Podría extenderse PlantItem para incluir descripción
+    var category by remember { mutableStateOf(existingProduct?.category ?: "PLANTAS DE INTERIOR") }
     var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -96,7 +108,13 @@ fun AddProductScreen(
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
             Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = ColorCremaCampos) {
-                Text("AGREGAR PRODUCTO", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(vertical = 12.dp))
+                Text(
+                    text = if (editMode) "EDITAR PRODUCTO" else "AGREGAR PRODUCTO", 
+                    fontSize = 20.sp, 
+                    fontWeight = FontWeight.ExtraBold, 
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, 
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)) {
@@ -106,10 +124,65 @@ fun AddProductScreen(
                         ProductImagePlaceholder(Modifier.weight(1f))
                     }
                     Spacer(modifier = Modifier.height(12.dp))
+                    
                     AddProductField("Nombre", name, { name = it }, "Ej. Monstera")
+                    
+                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Text("Categoría", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = ColorVerdeOlivaOscuro)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box {
+                            OutlinedTextField(
+                                value = category,
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                trailingIcon = { 
+                                    IconButton(onClick = { expanded = true }) {
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White)
+                            )
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                listOf("PLANTAS DE INTERIOR", "PLANTAS DE EXTERIOR", "BAJO MANTENIMIENTO", "AROMÁTICAS Y COMESTIBLES", "MACETAS Y ACCESORIOS", "CUIDADOS Y BIENESTAR").forEach { cat ->
+                                    DropdownMenuItem(
+                                        text = { Text(cat) },
+                                        onClick = {
+                                            category = cat
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     AddProductField("Precio", price, { price = it }, "Ej. $ 250.00")
+                    
+                    AddProductField("Descripción", description, { description = it }, "Detalles del producto...")
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = { /* Lógica */ }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion)) { Text("Confirmar") }
+                    Button(
+                        onClick = { 
+                            if (name.isNotBlank() && price.isNotBlank()) {
+                                if (editMode) {
+                                    ProductManager.updateProduct(existingPlantName, name, price, category)
+                                    Toast.makeText(context, "Producto actualizado", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    ProductManager.addProduct(name, price, category)
+                                    Toast.makeText(context, "Producto agregado", Toast.LENGTH_SHORT).show()
+                                }
+                                onBack()
+                            } else {
+                                Toast.makeText(context, "Llena los campos obligatorios", Toast.LENGTH_SHORT).show()
+                            }
+                        }, 
+                        modifier = Modifier.fillMaxWidth(), 
+                        colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion)
+                    ) { 
+                        Text("Confirmar") 
+                    }
                 }
             }
         }
