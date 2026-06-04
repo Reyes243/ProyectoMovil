@@ -44,9 +44,13 @@ class PlantDetail : ComponentActivity() {
                 PlantDetailScreen(
                     plantName = plantName,
                     onBack = { finish() },
-                    onLogout = { finishAffinity() },
+                    onLogout = { 
+                        UserManager.logout()
+                        finish()
+                    },
                     onNavigateToCart = { startActivity(Intent(this, Cart::class.java)) },
-                    onNavigateToAccount = { startActivity(Intent(this, Account::class.java)) }
+                    onNavigateToAccount = { startActivity(Intent(this, Account::class.java)) },
+                    onNavigateToLogin = { startActivity(Intent(this, Login::class.java)) }
                 )
             }
         }
@@ -59,11 +63,12 @@ fun PlantDetailScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToCart: () -> Unit,
-    onNavigateToAccount: () -> Unit
+    onNavigateToAccount: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
+    val isLoggedIn = UserManager.isLoggedIn
     var quantity by remember { mutableStateOf(1) }
     
-    // Obtenemos los datos de la planta, incluyendo su imagen específica definida en getPlantsByCategory
     val categories = listOf("PLANTAS DE INTERIOR", "PLANTAS DE EXTERIOR", "BAJO MANTENIMIENTO", "AROMÁTICAS Y COMESTIBLES", "MACETAS Y ACCESORIOS", "CUIDADOS Y BIENESTAR")
     var foundItem: PlantItem? = null
     for (cat in categories) {
@@ -75,7 +80,6 @@ fun PlantDetailScreen(
     val plantInfo = getPlantDetailData(plantName)
     val context = LocalContext.current
     
-    // Carrusel específico para Monstera, para las demás usamos su imagen asignada
     val images = if (plantName == "MONSTERA DELICIOSA") {
         listOf(R.drawable.monstera_1, R.drawable.monstera_2, R.drawable.monstera_3)
     } else {
@@ -94,9 +98,15 @@ fun PlantDetailScreen(
                     ) {
                         Text(text = "Raíz Viva", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorCremaCampos)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = onNavigateToAccount) { Icon(Icons.Default.Person, null, tint = ColorCremaCampos) }
-                            IconButton(onClick = onNavigateToCart) { Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos) }
-                            IconButton(onClick = onLogout) { Icon(Icons.AutoMirrored.Filled.Logout, null, tint = ColorCremaCampos) }
+                            if (isLoggedIn) {
+                                IconButton(onClick = onNavigateToAccount) { Icon(Icons.Default.Person, null, tint = ColorCremaCampos) }
+                                IconButton(onClick = onNavigateToCart) { Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos) }
+                                IconButton(onClick = onLogout) { Icon(Icons.AutoMirrored.Filled.Logout, null, tint = ColorCremaCampos) }
+                            } else {
+                                TextButton(onClick = onNavigateToLogin) {
+                                    Text("Login", color = ColorCremaCampos, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                     
@@ -170,9 +180,14 @@ fun PlantDetailScreen(
 
                         Button(
                             onClick = {
-                                CartManager.addPlant(plantInfo.name, plantInfo.price, quantity, item.imageRes)
-                                Toast.makeText(context, "${plantInfo.name} añadido al carrito", Toast.LENGTH_SHORT).show()
-                                onNavigateToCart()
+                                if (isLoggedIn) {
+                                    CartManager.addPlant(plantInfo.name, plantInfo.price, quantity, item.imageRes)
+                                    Toast.makeText(context, "${plantInfo.name} añadido al carrito", Toast.LENGTH_SHORT).show()
+                                    onNavigateToCart()
+                                } else {
+                                    Toast.makeText(context, "Debes iniciar sesión para comprar", Toast.LENGTH_LONG).show()
+                                    onNavigateToLogin()
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
                             shape = RoundedCornerShape(8.dp),
@@ -234,6 +249,6 @@ fun getPlantDetailData(name: String): PlantDetailData {
 @Composable
 fun PlantDetailPreview() {
     ProyectoMovilTheme {
-        PlantDetailScreen(plantName = "MONSTERA DELICIOSA", onBack = {}, onLogout = {}, onNavigateToCart = {}, onNavigateToAccount = {})
+        PlantDetailScreen(plantName = "MONSTERA DELICIOSA", onBack = {}, onLogout = {}, onNavigateToCart = {}, onNavigateToAccount = {}, onNavigateToLogin = {})
     }
 }

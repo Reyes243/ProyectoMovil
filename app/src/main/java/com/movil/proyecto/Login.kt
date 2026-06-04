@@ -1,4 +1,4 @@
-// Archivo: app/src/main/java/com/movil/proyecto/Login.kt
+
 package com.movil.proyecto
 
 import android.content.Intent
@@ -14,20 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,7 +42,12 @@ class Login : ComponentActivity() {
             ProyectoMovilTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     LoginScreen(
-                        onBack = { finish() },
+                        onBack = {
+                            val intent = Intent(this, Home::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            startActivity(intent)
+                            finish()
+                        },
                         onNavigateToRegister = {
                             val intent = Intent(this, Register::class.java)
                             startActivity(intent)
@@ -73,21 +66,20 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(ColorFondoVerdeClaro) // El fondo verde claro exterior
+            .background(ColorFondoVerdeClaro)
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // Logotipo de Raíz Viva
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo",
@@ -96,7 +88,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // La tarjeta gris-verdosa contenedora (Idéntica a tu emulador)
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
@@ -109,7 +100,6 @@ fun LoginScreen(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Título de la Marca
                 Text(
                     text = "Raíz Viva",
                     fontSize = 32.sp,
@@ -126,41 +116,20 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Campo: Correo
-                Text(
-                    text = "Correo",
-                    color = ColorCremaCampos,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Text("Correo", color = ColorCremaCampos, modifier = Modifier.fillMaxWidth(), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
+                    value = email,
+                    onValueChange = { email = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = ColorCremaCampos,
-                        unfocusedContainerColor = ColorCremaCampos,
-                        focusedTextColor = Color(0xFF2C3530),
-                        unfocusedTextColor = Color(0xFF2C3530),
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
+                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = ColorCremaCampos, unfocusedContainerColor = ColorCremaCampos, focusedTextColor = Color(0xFF2C3530), unfocusedTextColor = Color(0xFF2C3530), focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent),
                     shape = RoundedCornerShape(14.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Campo: Contraseña
-                Text(
-                    text = "Contraseña",
-                    color = ColorCremaCampos,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Text("Contraseña", color = ColorCremaCampos, modifier = Modifier.fillMaxWidth(), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 OutlinedTextField(
                     value = password,
@@ -169,61 +138,42 @@ fun LoginScreen(
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = ColorCremaCampos,
-                        unfocusedContainerColor = ColorCremaCampos,
-                        focusedTextColor = Color(0xFF2C3530),
-                        unfocusedTextColor = Color(0xFF2C3530),
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
+                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = ColorCremaCampos, unfocusedContainerColor = ColorCremaCampos, focusedTextColor = Color(0xFF2C3530), unfocusedTextColor = Color(0xFF2C3530), focusedBorderColor = Color.Transparent, unfocusedBorderColor = Color.Transparent),
                     shape = RoundedCornerShape(14.dp)
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // Botón Naranja de Acción (#E07A5F)
                 Button(
                     onClick = {
-                        if (username.isNotBlank() && password.isNotBlank()) {
-                            Toast.makeText(context, "¡Bienvenido!", Toast.LENGTH_SHORT).show()
-                            val intent = Intent(context, Home::class.java)
-                            context.startActivity(intent)
-                        } else {
+                        if (email.isBlank() || password.isBlank()) {
                             Toast.makeText(context, "Por favor, llena los campos", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val user = UserManager.loginUser(email, password)
+                            if (user != null) {
+                                Toast.makeText(context, "¡Bienvenido ${user.fullName}!", Toast.LENGTH_SHORT).show()
+                                val intent = Intent(context, Home::class.java)
+                                context.startActivity(intent)
+                            } else {
+                                Toast.makeText(context, "Correo o contraseña incorrectos", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text(
-                        text = "INICIAR SESIÓN",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
+                    Text("INICIAR SESIÓN", fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Enlaces inferiores
                 TextButton(onClick = onNavigateToRegister) {
-                    Text(
-                        text = "¿No tienes cuenta? Regístrate",
-                        color = ColorCremaCampos,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
+                    Text("¿No tienes cuenta? Regístrate", color = ColorCremaCampos, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 }
 
                 TextButton(onClick = onBack) {
-                    Text(
-                        text = "Regresar al inicio",
-                        color = ColorCremaCampos.copy(alpha = 0.7f),
-                        fontSize = 13.sp
-                    )
+                    Text("Regresar al inicio", color = ColorCremaCampos.copy(alpha = 0.7f), fontSize = 13.sp)
                 }
             }
         }

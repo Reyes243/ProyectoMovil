@@ -1,6 +1,7 @@
 
 package com.movil.proyecto
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,7 +40,13 @@ class OrderTracking : ComponentActivity() {
             ProyectoMovilTheme {
                 OrderTrackingScreen(
                     onBack = { finish() },
-                    onLogout = { finishAffinity() }
+                    onLogout = { 
+                        UserManager.logout()
+                        val intent = Intent(this, Login::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
                 )
             }
         }
@@ -56,48 +63,25 @@ fun OrderTrackingScreen(
             Surface(color = ColorVerdeOlivaOscuro, shadowElevation = 4.dp) {
                 Column(modifier = Modifier.padding(top = 44.dp)) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Raíz Viva",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorCremaCampos
-                        )
+                        Text(text = "Raíz Viva", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorCremaCampos)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Person, contentDescription = "Perfil", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
-                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
-                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp).clickable { onLogout() })
+                            Icon(Icons.Default.Person, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
+                            Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
+                            Icon(Icons.AutoMirrored.Filled.Logout, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp).clickable { onLogout() })
                         }
                     }
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 8.dp, end = 16.dp, bottom = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = ColorCremaCampos)
-                        }
+                    Row(modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = ColorCremaCampos) }
                         OutlinedTextField(
-                            value = "",
-                            onValueChange = {},
-                            placeholder = { Text("Buscar plantas...", fontSize = 14.sp, color = Color.Gray) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                            value = "", onValueChange = {}, placeholder = { Text("Buscar...", fontSize = 14.sp) },
+                            leadingIcon = { Icon(Icons.Default.Search, null) },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(24.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = ColorCremaCampos,
-                                unfocusedContainerColor = ColorCremaCampos,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
-                            ),
-                            singleLine = true
+                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = ColorCremaCampos, unfocusedContainerColor = ColorCremaCampos)
                         )
                     }
                 }
@@ -105,69 +89,21 @@ fun OrderTrackingScreen(
         },
         containerColor = ColorFondoVerdeClaro
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp).verticalScroll(rememberScrollState())) {
             Spacer(modifier = Modifier.height(16.dp))
-
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = ColorCremaCampos
-            ) {
-                Text(
-                    text = "RASTREO DE ENVÍO",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.Black,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = ColorCremaCampos) {
+                Text("RASTREO DE ENVÍO", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 12.dp))
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
-            ) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Orden: #RY1234567", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    
                     Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Línea de Tiempo de Rastreo
-                    TrackingStep(title = "Pedido confirmado", date = "01 Oct, 13:45", isDone = true)
-                    TrackingLine(isDone = true)
-                    TrackingStep(title = "En preparación", date = "02 Oct, 09:12", isDone = true)
-                    TrackingLine(isDone = false)
-                    TrackingStep(title = "En camino", date = "En curso", isDone = false)
-                    TrackingLine(isDone = false)
-                    TrackingStep(title = "Entregado", date = "-", isDone = false)
+                    TrackingStep("Pedido confirmado", "01 Oct, 13:45", true)
+                    TrackingLine(true)
+                    TrackingStep("En camino", "Próximamente", false)
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Estatus de envió", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ColorVerdeOlivaOscuro)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    StatusItem("Compra realizada con éxito", "01 Oct, 13:45")
-                    StatusItem("En preparación", "Tu pedido está siendo empaquetado con cuidado.\n02 Oct, 09:12")
-                    StatusItem("En camino", "Tu pedido ha salido de nuestro vivero.\nPróximamente llegará a tu destino.")
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -175,16 +111,12 @@ fun OrderTrackingScreen(
 @Composable
 fun TrackingStep(title: String, date: String, isDone: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-            modifier = Modifier.size(24.dp),
-            shape = CircleShape,
-            color = if (isDone) ColorVerdeOlivaOscuro else Color.Gray.copy(alpha = 0.3f)
-        ) {
+        Surface(modifier = Modifier.size(24.dp), shape = CircleShape, color = if (isDone) ColorVerdeOlivaOscuro else Color.Gray.copy(alpha = 0.3f)) {
             if (isDone) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp))
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if(isDone) Color.Black else Color.Gray)
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             Text(date, fontSize = 11.sp, color = Color.Gray)
         }
     }
@@ -192,23 +124,11 @@ fun TrackingStep(title: String, date: String, isDone: Boolean) {
 
 @Composable
 fun TrackingLine(isDone: Boolean) {
-    Box(modifier = Modifier.padding(start = 11.dp).width(2.dp).height(30.dp).background(if(isDone) ColorVerdeOlivaOscuro else Color.Gray.copy(alpha = 0.3f)))
-}
-
-@Composable
-fun StatusItem(title: String, info: String = "") {
-    Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        Text("• $title", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-        if (info.isNotEmpty()) {
-            Text(info, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.padding(start = 12.dp))
-        }
-    }
+    Box(modifier = Modifier.padding(start = 11.dp).width(2.dp).height(30.dp).background(if(isDone) ColorVerdeOlivaOscuro else Color.Gray))
 }
 
 @Preview(showBackground = true)
 @Composable
 fun OrderTrackingPreview() {
-    ProyectoMovilTheme {
-        OrderTrackingScreen(onBack = {}, onLogout = {})
-    }
+    ProyectoMovilTheme { OrderTrackingScreen(onBack = {}, onLogout = {}) }
 }

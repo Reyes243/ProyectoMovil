@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -41,7 +42,12 @@ class Home : ComponentActivity() {
         setContent {
             ProyectoMovilTheme {
                 HomeScreen(
-                    onLogout = { finish() },
+                    onLogout = { 
+                        UserManager.logout()
+                        val intent = Intent(this, Login::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                    },
                     onCategoryClick = { categoryName ->
                         val intent = Intent(this, PlantList::class.java).apply {
                             putExtra("CATEGORY_NAME", categoryName)
@@ -55,6 +61,10 @@ class Home : ComponentActivity() {
                     onNavigateToAccount = {
                         val intent = Intent(this, Account::class.java)
                         startActivity(intent)
+                    },
+                    onNavigateToLogin = {
+                        val intent = Intent(this, Login::class.java)
+                        startActivity(intent)
                     }
                 )
             }
@@ -67,10 +77,18 @@ fun HomeScreen(
     onLogout: () -> Unit,
     onCategoryClick: (String) -> Unit,
     onNavigateToCart: () -> Unit,
-    onNavigateToAccount: () -> Unit
+    onNavigateToAccount: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
     Scaffold(
-        topBar = { HomeHeader(onLogout = onLogout, onNavigateToCart = onNavigateToCart, onNavigateToAccount = onNavigateToAccount) },
+        topBar = { 
+            HomeHeader(
+                onLogout = onLogout, 
+                onNavigateToCart = onNavigateToCart, 
+                onNavigateToAccount = onNavigateToAccount,
+                onNavigateToLogin = onNavigateToLogin
+            ) 
+        },
         containerColor = ColorFondoVerdeClaro // #ADD9B3 - El verde de fondo general
     ) { innerPadding ->
         Column(
@@ -124,7 +142,14 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeHeader(onLogout: () -> Unit, onNavigateToCart: () -> Unit, onNavigateToAccount: () -> Unit) {
+fun HomeHeader(
+    onLogout: () -> Unit, 
+    onNavigateToCart: () -> Unit, 
+    onNavigateToAccount: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
+    val isLoggedIn = UserManager.isLoggedIn
+
     Surface(
         color = ColorVerdeOlivaOscuro, 
         shadowElevation = 4.dp
@@ -145,15 +170,25 @@ fun HomeHeader(onLogout: () -> Unit, onNavigateToCart: () -> Unit, onNavigateToA
                     fontWeight = FontWeight.Bold,
                     color = ColorCremaCampos
                 )
-                Row {
-                    IconButton(onClick = onNavigateToAccount) {
-                        Icon(Icons.Default.Person, contentDescription = "Perfil", tint = ColorCremaCampos)
-                    }
-                    IconButton(onClick = onNavigateToCart) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = ColorCremaCampos)
-                    }
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = ColorCremaCampos)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isLoggedIn) {
+                        IconButton(onClick = onNavigateToAccount) {
+                            Icon(Icons.Default.Person, contentDescription = "Perfil", tint = ColorCremaCampos)
+                        }
+                        IconButton(onClick = onNavigateToCart) {
+                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = ColorCremaCampos)
+                        }
+                        IconButton(onClick = onLogout) {
+                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = ColorCremaCampos)
+                        }
+                    } else {
+                        TextButton(onClick = onNavigateToLogin) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = ColorCremaCampos)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Login", color = ColorCremaCampos, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }
@@ -239,6 +274,6 @@ data class CategoryItem(val name: String, val imageRes: Int)
 @Composable
 fun HomePreview() {
     ProyectoMovilTheme {
-        HomeScreen(onLogout = {}, onCategoryClick = {}, onNavigateToCart = {}, onNavigateToAccount = {})
+        HomeScreen(onLogout = {}, onCategoryClick = {}, onNavigateToCart = {}, onNavigateToAccount = {}, onNavigateToLogin = {})
     }
 }

@@ -1,11 +1,11 @@
 
 package com.movil.proyecto
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,7 +38,13 @@ class Reports : ComponentActivity() {
             ProyectoMovilTheme {
                 ReportsScreen(
                     onBack = { finish() },
-                    onLogout = { finishAffinity() }
+                    onLogout = { 
+                        UserManager.logout()
+                        val intent = Intent(this, Login::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
                 )
             }
         }
@@ -50,168 +56,75 @@ fun ReportsScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit
 ) {
-    var selectedPeriod by remember { mutableStateOf("01/10/2022") }
+    val orders = OrderManager.orders
 
     Scaffold(
         topBar = {
             Surface(color = ColorVerdeOlivaOscuro, shadowElevation = 4.dp) {
                 Column(modifier = Modifier.padding(top = 44.dp)) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Raíz Viva",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorCremaCampos
-                        )
+                        Text(text = "Raíz Viva", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorCremaCampos)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Person, contentDescription = "Perfil", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
-                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
-                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp).clickable { onLogout() })
+                            Icon(Icons.Default.Person, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
+                            Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
+                            Icon(Icons.AutoMirrored.Filled.Logout, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp).clickable { onLogout() })
                         }
                     }
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 8.dp, end = 16.dp, bottom = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = ColorCremaCampos)
-                        }
-                        OutlinedTextField(
-                            value = "",
-                            onValueChange = {},
-                            placeholder = { Text("Buscar plantas...", fontSize = 14.sp, color = Color.Gray) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = ColorCremaCampos,
-                                unfocusedContainerColor = ColorCremaCampos,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
-                            ),
-                            singleLine = true
-                        )
+                    Row(modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = ColorCremaCampos) }
+                        OutlinedTextField(value = "", onValueChange = {}, placeholder = { Text("Buscar...") }, leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(24.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = ColorCremaCampos, unfocusedContainerColor = ColorCremaCampos))
                     }
                 }
             }
         },
         containerColor = ColorFondoVerdeClaro
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
-
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = ColorCremaCampos
-            ) {
-                Text(
-                    text = "REPORTES",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.Black,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
+            Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = ColorCremaCampos) {
+                Text("REPORTES", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 12.dp))
             }
-
             Spacer(modifier = Modifier.height(16.dp))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TabButton("Ventas", true)
-                        TabButton("Productos más vendidos", false)
-                        TabButton("Clientes que más compran", false)
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text("Periodo", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ColorVerdeOlivaOscuro)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = selectedPeriod,
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
-                        shape = RoundedCornerShape(8.dp),
-                        colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Button(
-                        onClick = {},
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Confirmar", fontWeight = FontWeight.Bold)
-                    }
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = {}, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = ColorVerdeOlivaOscuro), shape = RoundedCornerShape(8.dp)) {
-                            Text("CSV")
-                        }
-                        Button(onClick = {}, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = ColorVerdeOlivaOscuro), shape = RoundedCornerShape(8.dp)) {
-                            Text("PDF")
-                        }
-                    }
+            if (orders.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No hay datos suficientes para generar reportes.", color = Color.Gray)
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Tabla de Reporte
-            Card(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TableHead("Nombre")
-                        TableHead("Id")
-                        TableHead("Fecha")
-                        TableHead("Precio")
-                    }
-                    Divider(color = Color.Gray.copy(alpha = 0.3f))
-                    LazyColumn {
-                        items(List(5) { it }) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                TableCell("Aptenia cordifolia")
-                                TableCell("1")
-                                TableCell("01/10")
-                                TableCell("$ 250.00")
-                            }
-                            Divider(color = Color.Gray.copy(alpha = 0.1f))
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            TableHead("Nombre")
+                            TableHead("Id")
+                            TableHead("Fecha")
+                            TableHead("Precio")
                         }
-                        item {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                Text("Total del periodo: ", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text("$ 1,250.00", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = ColorVerdeOlivaOscuro)
+                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                        LazyColumn {
+                            items(orders) { order ->
+                                val firstItem = order.items.firstOrNull()?.name ?: "Pedido"
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    TableCell(if(order.items.size > 1) "$firstItem..." else firstItem)
+                                    TableCell(order.id.takeLast(4))
+                                    TableCell(order.date.take(5))
+                                    TableCell("$ ${String.format("%.2f", order.total)}")
+                                }
+                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                    Text("Total acumulado: ", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text("$ ${String.format("%.2f", orders.sumOf { it.total })}", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = ColorVerdeOlivaOscuro)
+                                }
                             }
                         }
                     }
@@ -219,24 +132,6 @@ fun ReportsScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
-    }
-}
-
-@Composable
-fun TabButton(text: String, selected: Boolean) {
-    Surface(
-        color = if (selected) ColorVerdeOlivaOscuro else Color.Transparent,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.padding(horizontal = 2.dp)
-    ) {
-        Text(
-            text = text,
-            fontSize = 9.sp,
-            color = if (selected) Color.White else Color.Gray,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
     }
 }
 
@@ -253,7 +148,5 @@ fun TableCell(text: String) {
 @Preview(showBackground = true)
 @Composable
 fun ReportsPreview() {
-    ProyectoMovilTheme {
-        ReportsScreen(onBack = {}, onLogout = {})
-    }
+    ProyectoMovilTheme { ReportsScreen(onBack = {}, onLogout = {}) }
 }

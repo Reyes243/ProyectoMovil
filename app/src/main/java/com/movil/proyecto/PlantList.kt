@@ -44,7 +44,12 @@ class PlantList : ComponentActivity() {
                 PlantListScreen(
                     categoryName = categoryName,
                     onBack = { finish() },
-                    onLogout = { finishAffinity() },
+                    onLogout = { 
+                        UserManager.logout()
+                        val intent = Intent(this, Login::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                    },
                     onPlantClick = { plantName ->
                         val intent = Intent(this, PlantDetail::class.java).apply {
                             putExtra("PLANT_NAME", plantName)
@@ -57,6 +62,10 @@ class PlantList : ComponentActivity() {
                     },
                     onNavigateToAccount = {
                         val intent = Intent(this, Account::class.java)
+                        startActivity(intent)
+                    },
+                    onNavigateToLogin = {
+                        val intent = Intent(this, Login::class.java)
                         startActivity(intent)
                     }
                 )
@@ -72,8 +81,10 @@ fun PlantListScreen(
     onLogout: () -> Unit,
     onPlantClick: (String) -> Unit,
     onNavigateToCart: () -> Unit,
-    onNavigateToAccount: () -> Unit
+    onNavigateToAccount: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
+    val isLoggedIn = UserManager.isLoggedIn
     val plants = getPlantsByCategory(categoryName)
 
     Scaffold(
@@ -81,74 +92,31 @@ fun PlantListScreen(
             Surface(color = ColorVerdeOlivaOscuro, shadowElevation = 4.dp) {
                 Column(modifier = Modifier.padding(top = 44.dp)) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Raíz Viva",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorCremaCampos
-                        )
+                        Text(text = "Raíz Viva", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorCremaCampos)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Person, 
-                                contentDescription = "Perfil", 
-                                tint = ColorCremaCampos, 
-                                modifier = Modifier
-                                    .padding(horizontal = 8.dp)
-                                    .size(24.dp)
-                                    .clickable { onNavigateToAccount() }
-                            )
-                            Icon(
-                                Icons.Default.ShoppingCart, 
-                                contentDescription = "Carrito", 
-                                tint = ColorCremaCampos, 
-                                modifier = Modifier
-                                    .padding(horizontal = 8.dp)
-                                    .size(24.dp)
-                                    .clickable { onNavigateToCart() }
-                            )
-                            Icon(
-                                Icons.AutoMirrored.Filled.Logout, 
-                                contentDescription = "Cerrar sesión", 
-                                tint = ColorCremaCampos,
-                                modifier = Modifier
-                                    .padding(horizontal = 8.dp)
-                                    .size(24.dp)
-                                    .clickable { onLogout() }
-                            )
+                            if (isLoggedIn) {
+                                IconButton(onClick = onNavigateToAccount) { Icon(Icons.Default.Person, null, tint = ColorCremaCampos) }
+                                IconButton(onClick = onNavigateToCart) { Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos) }
+                                IconButton(onClick = onLogout) { Icon(Icons.AutoMirrored.Filled.Logout, null, tint = ColorCremaCampos) }
+                            } else {
+                                TextButton(onClick = onNavigateToLogin) {
+                                    Text("Login", color = ColorCremaCampos, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 8.dp, end = 16.dp, bottom = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = ColorCremaCampos)
-                        }
+                    Row(modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = ColorCremaCampos) }
                         OutlinedTextField(
-                            value = "",
-                            onValueChange = {},
-                            placeholder = { Text("Buscar plantas...", fontSize = 14.sp, color = Color.Gray) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
+                            value = "", onValueChange = {}, placeholder = { Text("Buscar...", fontSize = 14.sp) },
+                            leadingIcon = { Icon(Icons.Default.Search, null) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(24.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = ColorCremaCampos,
-                                unfocusedContainerColor = ColorCremaCampos,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
-                            ),
-                            singleLine = true
+                            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = ColorCremaCampos, unfocusedContainerColor = ColorCremaCampos)
                         )
                     }
                 }
@@ -160,49 +128,25 @@ fun PlantListScreen(
             columns = GridCells.Fixed(2),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
         ) {
             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                 Column {
-                    Text(
-                        text = categoryName,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = ColorVerdeOlivaOscuro
-                    )
-
+                    Text(text = categoryName, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ColorVerdeOlivaOscuro)
                     Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterBox(label = "Precio mínimo", modifier = Modifier.weight(1f))
                         FilterBox(label = "Precio máximo", modifier = Modifier.weight(1f))
-                        Button(
-                            onClick = {},
-                            colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp),
-                            modifier = Modifier.height(36.dp)
-                        ) {
+                        Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion), shape = RoundedCornerShape(8.dp), modifier = Modifier.height(36.dp)) {
                             Text("Aplicar", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
-
             items(plants) { plant ->
-                PlantCard(
-                    plant = plant,
-                    onDetailClick = { onPlantClick(plant.name) }
-                )
+                PlantCard(plant = plant, onDetailClick = { onPlantClick(plant.name) })
             }
         }
     }
@@ -265,11 +209,7 @@ fun getPlantsByCategory(category: String): List<PlantItem> {
 
 @Composable
 fun FilterBox(label: String, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.height(36.dp),
-        shape = RoundedCornerShape(8.dp),
-        color = ColorCremaCampos
-    ) {
+    Surface(modifier = modifier.height(36.dp), shape = RoundedCornerShape(8.dp), color = ColorCremaCampos) {
         Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(horizontal = 12.dp)) {
             Text(label, fontSize = 11.sp, color = Color.Gray)
         }
@@ -278,58 +218,16 @@ fun FilterBox(label: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun PlantCard(plant: PlantItem, onDetailClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = ColorCremaCampos),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White
-            ) {
-                Image(
-                    painter = painterResource(id = plant.imageRes),
-                    contentDescription = plant.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos), elevation = CardDefaults.cardElevation(2.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Surface(modifier = Modifier.fillMaxWidth().aspectRatio(1f), shape = RoundedCornerShape(12.dp), color = Color.White) {
+                Image(painter = painterResource(id = plant.imageRes), contentDescription = plant.name, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             }
-            
             Spacer(modifier = Modifier.height(10.dp))
-            
-            Text(
-                text = plant.name,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                lineHeight = 13.sp
-            )
-            
-            Text(
-                text = plant.price,
-                fontSize = 11.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Medium
-            )
-            
+            Text(text = plant.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Black, lineHeight = 13.sp)
+            Text(text = plant.price, fontSize = 11.sp, color = Color.Black, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(10.dp))
-            
-            Button(
-                onClick = onDetailClick,
-                colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(32.dp),
-                contentPadding = PaddingValues(0.dp)
-            ) {
+            Button(onClick = onDetailClick, colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().height(32.dp), contentPadding = PaddingValues(0.dp)) {
                 Text("MÁS INFORMACIÓN", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
@@ -342,6 +240,6 @@ data class PlantItem(val name: String, val price: String, val imageRes: Int)
 @Composable
 fun PlantListPreview() {
     ProyectoMovilTheme {
-        PlantListScreen(categoryName = "PLANTAS DE INTERIOR", onBack = {}, onLogout = {}, onPlantClick = {}, onNavigateToCart = {}, onNavigateToAccount = {})
+        PlantListScreen(categoryName = "PLANTAS DE INTERIOR", onBack = {}, onLogout = {}, onPlantClick = {}, onNavigateToCart = {}, onNavigateToAccount = {}, onNavigateToLogin = {})
     }
 }

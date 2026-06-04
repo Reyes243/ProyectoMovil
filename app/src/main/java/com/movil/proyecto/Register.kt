@@ -1,4 +1,4 @@
-// Archivo: app/src/main/java/com/movil/proyecto/Register.kt
+
 package com.movil.proyecto
 
 import android.os.Bundle
@@ -67,19 +67,20 @@ fun RegisterScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(ColorFondoVerdeClaro) // Mantiene la armonía exterior verde claro
+            .background(ColorFondoVerdeClaro)
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // Logotipo de Raíz Viva
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo",
@@ -88,7 +89,6 @@ fun RegisterScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Tarjeta de Registro Oliva Oscuro
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
@@ -117,156 +117,81 @@ fun RegisterScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Campo: Nombre Completo
-                Text(
-                    text = "Nombre Completo",
-                    color = ColorCremaCampos,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = fullName,
-                    onValueChange = { fullName = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = ColorCremaCampos,
-                        unfocusedContainerColor = ColorCremaCampos,
-                        focusedTextColor = Color(0xFF2C3530),
-                        unfocusedTextColor = Color(0xFF2C3530),
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(14.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Campo: Correo Electrónico
-                Text(
-                    text = "Correo Electrónico",
-                    color = ColorCremaCampos,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = ColorCremaCampos,
-                        unfocusedContainerColor = ColorCremaCampos,
-                        focusedTextColor = Color(0xFF2C3530),
-                        unfocusedTextColor = Color(0xFF2C3530),
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(14.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Campo: Contraseña
-                Text(
-                    text = "Contraseña",
-                    color = ColorCremaCampos,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = ColorCremaCampos,
-                        unfocusedContainerColor = ColorCremaCampos,
-                        focusedTextColor = Color(0xFF2C3530),
-                        unfocusedTextColor = Color(0xFF2C3530),
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(14.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Campo: Confirmar Contraseña
-                Text(
-                    text = "Confirmar Contraseña",
-                    color = ColorCremaCampos,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = ColorCremaCampos,
-                        unfocusedContainerColor = ColorCremaCampos,
-                        focusedTextColor = Color(0xFF2C3530),
-                        unfocusedTextColor = Color(0xFF2C3530),
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(14.dp)
-                )
+                RegisterField("Nombre Completo", fullName, { fullName = it })
+                RegisterField("Correo Electrónico", email, { email = it }, KeyboardType.Email)
+                RegisterField("Dirección", address, { address = it })
+                RegisterField("Teléfono", phone, { 
+                    if (it.length <= 10 && it.all { char -> char.isDigit() }) phone = it 
+                }, KeyboardType.Phone)
+                RegisterField("Contraseña", password, { password = it }, KeyboardType.Password, isPassword = true)
+                RegisterField("Confirmar Contraseña", confirmPassword, { confirmPassword = it }, KeyboardType.Password, isPassword = true)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Botón Naranja de Registro (#E07A5F)
                 Button(
                     onClick = {
-                        if (fullName.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-                            Toast.makeText(context, "Por favor, llena todos los campos", Toast.LENGTH_SHORT).show()
+                        val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
+                        if (fullName.length < 3) {
+                            Toast.makeText(context, "El nombre debe ser más largo", Toast.LENGTH_SHORT).show()
+                        } else if (!email.matches(emailPattern.toRegex())) {
+                            Toast.makeText(context, "Correo inválido", Toast.LENGTH_SHORT).show()
+                        } else if (address.isBlank()) {
+                            Toast.makeText(context, "La dirección es obligatoria", Toast.LENGTH_SHORT).show()
+                        } else if (phone.length != 10 || !phone.all { it.isDigit() }) {
+                            Toast.makeText(context, "Teléfono inválido (debe tener 10 números)", Toast.LENGTH_SHORT).show()
+                        } else if (password.length < 6) {
+                            Toast.makeText(context, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
                         } else if (password != confirmPassword) {
                             Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "¡Registro Exitoso!", Toast.LENGTH_LONG).show()
-                            onBack()
+                            val success = UserManager.registerUser(UserData(fullName, email, password, address, phone))
+                            if (success) {
+                                Toast.makeText(context, "¡Registro Exitoso! Inicia sesión", Toast.LENGTH_LONG).show()
+                                onBack()
+                            } else {
+                                Toast.makeText(context, "Este correo ya está registrado", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text(
-                        text = "REGISTRARSE",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
+                    Text("REGISTRARSE", fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 TextButton(onClick = onBack) {
-                    Text(
-                        text = "Cancelar",
-                        color = ColorCremaCampos,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp
-                    )
+                    Text("Cancelar", color = ColorCremaCampos, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 }
             }
         }
+    }
+}
+
+@Composable
+fun RegisterField(label: String, value: String, onValueChange: (String) -> Unit, keyboardType: KeyboardType = KeyboardType.Text, isPassword: Boolean = false) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(label, color = ColorCremaCampos, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(modifier = Modifier.height(4.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = ColorCremaCampos,
+                unfocusedContainerColor = ColorCremaCampos,
+                focusedTextColor = Color(0xFF2C3530),
+                unfocusedTextColor = Color(0xFF2C3530),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent
+            ),
+            shape = RoundedCornerShape(14.dp)
+        )
     }
 }
 

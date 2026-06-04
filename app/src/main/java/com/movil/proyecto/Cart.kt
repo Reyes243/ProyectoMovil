@@ -3,6 +3,7 @@ package com.movil.proyecto
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,7 +41,10 @@ class Cart : ComponentActivity() {
             ProyectoMovilTheme {
                 CartScreen(
                     onBack = { finish() },
-                    onLogout = { finishAffinity() },
+                    onLogout = { 
+                        UserManager.logout()
+                        finish()
+                    },
                     onNavigateToCheckout = {
                         if (CartManager.items.isNotEmpty()) {
                             val intent = Intent(this, Checkout::class.java)
@@ -54,6 +59,10 @@ class Cart : ComponentActivity() {
                     onNavigateToAccount = {
                         val intent = Intent(this, Account::class.java)
                         startActivity(intent)
+                    },
+                    onNavigateToLogin = {
+                        val intent = Intent(this, Login::class.java)
+                        startActivity(intent)
                     }
                 )
             }
@@ -67,10 +76,13 @@ fun CartScreen(
     onLogout: () -> Unit,
     onNavigateToCheckout: () -> Unit,
     onNavigateToHome: () -> Unit,
-    onNavigateToAccount: () -> Unit
+    onNavigateToAccount: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
+    val isLoggedIn = UserManager.isLoggedIn
     val cartItems = CartManager.items
     val total = CartManager.getTotal()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -83,9 +95,15 @@ fun CartScreen(
                     ) {
                         Text(text = "Raíz Viva", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = ColorCremaCampos)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = onNavigateToAccount) { Icon(Icons.Default.Person, null, tint = ColorCremaCampos) }
-                            Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
-                            IconButton(onClick = onLogout) { Icon(Icons.AutoMirrored.Filled.Logout, null, tint = ColorCremaCampos) }
+                            if (isLoggedIn) {
+                                IconButton(onClick = onNavigateToAccount) { Icon(Icons.Default.Person, null, tint = ColorCremaCampos) }
+                                Icon(Icons.Default.ShoppingCart, null, tint = ColorCremaCampos, modifier = Modifier.padding(horizontal = 8.dp).size(24.dp))
+                                IconButton(onClick = onLogout) { Icon(Icons.AutoMirrored.Filled.Logout, null, tint = ColorCremaCampos) }
+                            } else {
+                                TextButton(onClick = onNavigateToLogin) {
+                                    Text("Login", color = ColorCremaCampos, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                     
@@ -147,7 +165,22 @@ fun CartScreen(
                         Text("$ ${String.format("%.2f", total)}", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onNavigateToCheckout, enabled = cartItems.isNotEmpty(), modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion), shape = RoundedCornerShape(28.dp)) { Text("Comprar ahora", fontSize = 20.sp) }
+                    Button(
+                        onClick = {
+                            if (isLoggedIn) {
+                                onNavigateToCheckout()
+                            } else {
+                                Toast.makeText(context, "Debes iniciar sesión para comprar", Toast.LENGTH_LONG).show()
+                                onNavigateToLogin()
+                            }
+                        }, 
+                        enabled = cartItems.isNotEmpty(), 
+                        modifier = Modifier.fillMaxWidth().height(56.dp), 
+                        colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion), 
+                        shape = RoundedCornerShape(28.dp)
+                    ) { 
+                        Text("Comprar ahora", fontSize = 20.sp) 
+                    }
                 }
             }
         }
@@ -184,5 +217,5 @@ fun CartItemRow(item: CartItemData, onRemove: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun CartPreview() {
-    ProyectoMovilTheme { CartScreen(onBack = {}, onLogout = {}, onNavigateToCheckout = {}, onNavigateToHome = {}, onNavigateToAccount = {}) }
+    ProyectoMovilTheme { CartScreen(onBack = {}, onLogout = {}, onNavigateToCheckout = {}, onNavigateToHome = {}, onNavigateToAccount = {}, onNavigateToLogin = {}) }
 }

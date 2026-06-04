@@ -40,7 +40,13 @@ class Account : ComponentActivity() {
             ProyectoMovilTheme {
                 AccountScreen(
                     onBack = { finish() },
-                    onLogout = { finishAffinity() },
+                    onLogout = { 
+                        UserManager.logout()
+                        val intent = Intent(this, Login::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    },
                     onNavigateToCart = { startActivity(Intent(this, Cart::class.java)) },
                     onOptionClick = { option ->
                         when (option) {
@@ -48,7 +54,13 @@ class Account : ComponentActivity() {
                             "AGREGAR PRODUCTO" -> startActivity(Intent(this, AddProduct::class.java))
                             "MIS COMPRAS" -> startActivity(Intent(this, MyPurchases::class.java))
                             "REPORTES" -> startActivity(Intent(this, Reports::class.java))
-                            "CERRAR SESION" -> finishAffinity()
+                            "CERRAR SESION" -> {
+                                UserManager.logout()
+                                val intent = Intent(this, Login::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                startActivity(intent)
+                                finish()
+                            }
                             "ELIMINAR CUENTA" -> { /* Lógica */ }
                         }
                     }
