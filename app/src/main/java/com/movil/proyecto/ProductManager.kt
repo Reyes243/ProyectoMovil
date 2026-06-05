@@ -3,6 +3,7 @@ package com.movil.proyecto
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
@@ -20,18 +21,22 @@ object ProductManager {
 
     fun init(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
-            val snapshot = db.collection("productos").limit(1).get().await()
-            if (snapshot.isEmpty) {
-                seedInitialProducts()
+            try {
+                val snapshot = db.collection("productos").limit(1).get().await()
+                if (snapshot.isEmpty) {
+                    seedInitialProducts()
+                }
+            } catch (e: Exception) {
+                Log.e("ProductManager", "Error init: ${e.message}")
             }
         }
     }
 
     private suspend fun seedInitialProducts() {
         val initialPlants = listOf(
-            hashMapOf("nombre" to "MONSTERA DELICIOSA", "precio" to 250.0, "categoria" to "PLANTAS DE INTERIOR", "estado" to "activo", "stock" to 45, "ventas" to 0),
-            hashMapOf("nombre" to "LAVANDA", "precio" to 80.0, "categoria" to "PLANTAS DE EXTERIOR", "estado" to "activo", "stock" to 200, "ventas" to 0),
-            hashMapOf("nombre" to "ALOE VERA", "precio" to 90.0, "categoria" to "BAJO MANTENIMIENTO", "estado" to "activo", "stock" to 90, "ventas" to 0)
+            hashMapOf("nombre" to "MONSTERA DELICIOSA", "precio" to 250.0, "categoria" to "PLANTAS DE INTERIOR", "estado" to "activo", "stock" to 45L, "ventas" to 0L),
+            hashMapOf("nombre" to "LAVANDA", "precio" to 80.0, "categoria" to "PLANTAS DE EXTERIOR", "estado" to "activo", "stock" to 200L, "ventas" to 0L),
+            hashMapOf("nombre" to "ALOE VERA", "precio" to 90.0, "categoria" to "BAJO MANTENIMIENTO", "estado" to "activo", "stock" to 90L, "ventas" to 0L)
         )
         for (plant in initialPlants) {
             db.collection("productos").add(plant).await()
@@ -62,7 +67,7 @@ object ProductManager {
                     price = formatPrice(priceNum),
                     imageUrl = doc.getString("imageUrl"),
                     imageRes = 0,
-                    category = category.uppercase(),
+                    category = doc.getString("categoria") ?: category.uppercase(),
                     isUserAdded = doc.getString("vendedor_id") != null,
                     stock = doc.getLong("stock")?.toInt() ?: 0,
                     description = doc.getString("descripcion") ?: "Producto de alta calidad para el bienestar de tu hogar.",
@@ -70,23 +75,42 @@ object ProductManager {
                 )
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ProductManager", "Error getProducts: ${e.message}")
             emptyList()
         }
     }
 
-    suspend fun addProduct(name: String, price: String, category: String, imageUri: Uri? = null, stock: Int = 0, description: String = "") = withContext(Dispatchers.IO) {
+    suspend fun saveProduct(
+        context: Context, 
+        id: String?, 
+        name: String, 
+        price: String, 
+        category: String, 
+        imageUri: Uri? = null, 
+        stock: Int = 0, 
+        description: String = "",
+        existingImageUrl: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
         val priceValue = price.replace("$", "").replace(",", "").trim().toDoubleOrNull() ?: 0.0
         
-        var uploadedImageUrl: String? = null
+        var finalImageUrl: String? = existingImageUrl
+        
+        // Si el usuario seleccionó una NUEVA imagen, la subimos
         if (imageUri != null) {
             try {
                 val fileName = "productos/${UUID.randomUUID()}.jpg"
                 val ref = storage.reference.child(fileName)
-                ref.putFile(imageUri).await()
-                uploadedImageUrl = ref.downloadUrl.await().toString()
+                
+                val inputStream = context.contentResolver.openInputStream(imageUri)
+                if (inputStream != null) {
+                    val bytes = inputStream.readBytes()
+                    inputStream.close()
+                    ref.putBytes(bytes).await()
+                    finalImageUrl = ref.downloadUrl.await().toString()
+                    Log.d("ProductManager", "Nueva imagen subida: $finalImageUrl")
+                }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("ProductManager", "Error al subir imagen: ${e.message}")
             }
         }
 
@@ -95,28 +119,44 @@ object ProductManager {
             "precio" to priceValue,
             "categoria" to category.uppercase(),
             "vendedor_id" to UserManager.currentUser?.id,
-            "imageUrl" to uploadedImageUrl,
+            "imageUrl" to finalImageUrl,
             "estado" to "activo",
             "stock" to stock.toLong(),
-            "descripcion" to description,
-            "ventas" to 0L
+            "descripcion" to description
         )
-        try {
-            db.collection("productos").add(productMap).await()
+
+        return@withContext try {
+            if (id.isNullOrEmpty()) {
+                // Modo crear nuevo
+                productMap["ventas"] = 0L
+                db.collection("productos").add(productMap).await()
+                Log.d("ProductManager", "Producto creado exitosamente")
+            } else {
+                // Modo editar: actualizamos el documento existente por su ID
+                db.collection("productos").document(id).update(productMap as Map<String, Any>).await()
+                Log.d("ProductManager", "Producto $id actualizado exitosamente")
+            }
+            true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ProductManager", "Error al guardar producto: ${e.message}")
+            false
         }
     }
 
     suspend fun updateProductSales(productId: String, quantity: Int) = withContext(Dispatchers.IO) {
         if (productId.isEmpty()) return@withContext
         try {
-            db.collection("productos").document(productId).update(
-                "ventas", FieldValue.increment(quantity.toLong()),
-                "stock", FieldValue.increment(-quantity.toLong())
-            ).await()
+            val docRef = db.collection("productos").document(productId)
+            db.runTransaction { transaction ->
+                val snapshot = transaction.get(docRef)
+                val currentStock = (snapshot.getLong("stock") ?: 0L)
+                val currentSales = (snapshot.getLong("ventas") ?: 0L)
+                
+                transaction.update(docRef, "stock", currentStock - quantity)
+                transaction.update(docRef, "ventas", currentSales + quantity)
+            }.await()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ProductManager", "Error updating sales: ${e.message}")
         }
     }
 
@@ -144,7 +184,7 @@ object ProductManager {
                 )
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ProductManager", "Error getUserProducts: ${e.message}")
             emptyList()
         }
     }
@@ -156,20 +196,7 @@ object ProductManager {
                 db.collection("productos").document(doc.id).delete().await()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun getHardcodedProducts(category: String): List<PlantItem> {
-        return when (category.uppercase()) {
-            "PLANTAS DE INTERIOR" -> listOf(
-                PlantItem("MONSTERA DELICIOSA", "$ 250", R.drawable.monstera_1, null, "PLANTAS DE INTERIOR", stock = 45),
-                PlantItem("POTO (EPIPREMNUM)", "$ 120", R.drawable.planta_1, null, "PLANTAS DE INTERIOR", stock = 120)
-            )
-            "PLANTAS DE EXTERIOR" -> listOf(
-                PlantItem("LAVANDA", "$ 80", R.drawable.cat_exterior, null, "PLANTAS DE EXTERIOR", stock = 200)
-            )
-            else -> emptyList()
+            Log.e("ProductManager", "Error deleting: ${e.message}")
         }
     }
 }

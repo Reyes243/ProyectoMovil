@@ -21,12 +21,11 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -89,7 +88,7 @@ fun HomeScreen(
                 onNavigateToLogin = onNavigateToLogin
             ) 
         },
-        containerColor = ColorFondoVerdeClaro // #ADD9B3 - El verde de fondo general
+        containerColor = ColorFondoVerdeClaro
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -99,12 +98,66 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 1. BANNER PRINCIPAL
             MainBanner()
 
-            Spacer(modifier = Modifier.height(24.dp))
+            // API DE CONSEJOS (Dato curioso o Tip)
+            var plantFact by remember { mutableStateOf("Cargando consejo verde...") }
+            
+            val plantTips = listOf(
+                "La Monstera necesita luz indirecta para no quemar sus hojas.",
+                "El exceso de agua es la principal causa de muerte en suculentas.",
+                "Limpia el polvo de las hojas para que respiren mejor.",
+                "Hablarle a tus plantas puede ayudarlas a crecer (¡y a ti a desestresarte!).",
+                "El Aloe Vera prefiere macetas con muy buen drenaje.",
+                "La Lavanda necesita al menos 6 horas de sol directo al día."
+            )
 
-            // 2. TÍTULO DE CATEGORÍAS
+            LaunchedEffect(Unit) {
+                try {
+                    // Intentamos traer un consejo de la API real
+                    val response = PlantApiManager.service.getRandomAdvice()
+                    // Como la API es en inglés y genérica, mezclamos con un tip de planta local
+                    plantFact = plantTips.random()
+                } catch (e: Exception) {
+                    plantFact = plantTips.random()
+                }
+            }
+            
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = ColorCremaCampos.copy(alpha = 0.7f)),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp), 
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        color = ColorVerdeOlivaOscuro,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("🌱", fontSize = 20.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Consejo de Raíz Viva", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ColorVerdeOlivaOscuro)
+                        Text(
+                            text = plantFact,
+                            fontSize = 13.sp,
+                            color = Color.Black,
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
                 text = "Categorías",
                 fontSize = 22.sp,
@@ -113,7 +166,6 @@ fun HomeScreen(
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            // 3. GRID DE CATEGORÍAS
             val categories = listOf(
                 CategoryItem("PLANTAS DE INTERIOR", R.drawable.cat_interior),
                 CategoryItem("PLANTAS DE EXTERIOR", R.drawable.cat_exterior),

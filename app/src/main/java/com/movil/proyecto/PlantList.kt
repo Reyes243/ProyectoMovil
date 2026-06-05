@@ -52,9 +52,9 @@ class PlantList : ComponentActivity() {
                         startActivity(intent)
                         finish()
                     },
-                    onPlantClick = { plantName ->
+                    onPlantClick = { plantId ->
                         val intent = Intent(this, PlantDetail::class.java).apply {
-                            putExtra("PLANT_NAME", plantName)
+                            putExtra("PLANT_ID", plantId)
                         }
                         startActivity(intent)
                     },
@@ -152,7 +152,7 @@ fun PlantListScreen(
                 }
             }
             items(plants) { plant ->
-                PlantCard(plant = plant, onDetailClick = { onPlantClick(plant.name) })
+                PlantCard(plant = plant, onDetailClick = { onPlantClick(plant.id) })
             }
         }
     }

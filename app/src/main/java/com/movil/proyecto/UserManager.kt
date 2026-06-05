@@ -67,6 +67,12 @@ object UserManager {
                 db.collection("usuarios").document(uid).set(userMap).await()
                 
                 null 
+            } catch (e: com.google.firebase.auth.FirebaseAuthUserCollisionException) {
+                "Este correo ya está registrado por otro usuario"
+            } catch (e: com.google.firebase.auth.FirebaseAuthWeakPasswordException) {
+                "La contraseña es muy débil"
+            } catch (e: com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
+                "El formato del correo es inválido"
             } catch (e: Exception) {
                 e.message ?: "Error desconocido en el registro"
             }
@@ -96,6 +102,12 @@ object UserManager {
                 } else {
                     null
                 }
+            } catch (e: com.google.firebase.auth.FirebaseAuthInvalidUserException) {
+                // El usuario no existe
+                null
+            } catch (e: com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
+                // Credenciales inválidas (password incorrecto)
+                null
             } catch (e: Exception) {
                 e.printStackTrace()
                 null

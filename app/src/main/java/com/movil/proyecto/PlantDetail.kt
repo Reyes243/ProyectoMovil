@@ -38,12 +38,12 @@ import com.movil.proyecto.ui.theme.*
 class PlantDetail : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val plantName = intent.getStringExtra("PLANT_NAME") ?: "MONSTERA DELICIOSA"
+        val plantId = intent.getStringExtra("PLANT_ID") ?: ""
         enableEdgeToEdge()
         setContent {
             ProyectoMovilTheme {
                 PlantDetailScreen(
-                    plantName = plantName,
+                    plantId = plantId,
                     onBack = { finish() },
                     onLogout = { 
                         UserManager.logout()
@@ -63,7 +63,7 @@ class PlantDetail : ComponentActivity() {
 
 @Composable
 fun PlantDetailScreen(
-    plantName: String,
+    plantId: String,
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToCart: () -> Unit,
@@ -77,7 +77,7 @@ fun PlantDetailScreen(
     var plantItem by remember { mutableStateOf<PlantItem?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(plantName) {
+    LaunchedEffect(plantId) {
         val allProducts = ProductManager.getProductsByCategory("PLANTAS DE INTERIOR") + 
                          ProductManager.getProductsByCategory("PLANTAS DE EXTERIOR") +
                          ProductManager.getProductsByCategory("BAJO MANTENIMIENTO") +
@@ -85,7 +85,7 @@ fun PlantDetailScreen(
                          ProductManager.getProductsByCategory("MACETAS Y ACCESORIOS") +
                          ProductManager.getProductsByCategory("CUIDADOS Y BIENESTAR")
         
-        plantItem = allProducts.find { it.name.uppercase() == plantName.uppercase() }
+        plantItem = allProducts.find { it.id == plantId }
         isLoading = false
     }
 
@@ -133,7 +133,10 @@ fun PlantDetailScreen(
             }
         } else if (plantItem == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Producto no encontrado")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Producto no encontrado")
+                    Button(onClick = onBack) { Text("Volver") }
+                }
             }
         } else {
             val item = plantItem!!
@@ -239,6 +242,6 @@ fun TrustInfoItem(icon: ImageVector, text: String) {
 @Composable
 fun PlantDetailPreview() {
     ProyectoMovilTheme {
-        PlantDetailScreen(plantName = "MONSTERA DELICIOSA", onBack = {}, onLogout = {}, onNavigateToCart = {}, onNavigateToAccount = {}, onNavigateToLogin = {})
+        PlantDetailScreen(plantId = "", onBack = {}, onLogout = {}, onNavigateToCart = {}, onNavigateToAccount = {}, onNavigateToLogin = {})
     }
 }

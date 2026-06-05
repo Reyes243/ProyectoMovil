@@ -47,14 +47,14 @@ class AddProduct : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val editMode = intent.getBooleanExtra("EDIT_MODE", false)
-        val plantName = intent.getStringExtra("PLANT_NAME") ?: ""
+        val plantId = intent.getStringExtra("PLANT_ID") ?: ""
         
         enableEdgeToEdge()
         setContent {
             ProyectoMovilTheme {
                 AddProductScreen(
                     editMode = editMode,
-                    existingPlantName = plantName,
+                    existingPlantId = plantId,
                     onBack = { finish() },
                     onLogout = { 
                         UserManager.logout()
@@ -72,7 +72,7 @@ class AddProduct : ComponentActivity() {
 @Composable
 fun AddProductScreen(
     editMode: Boolean = false,
-    existingPlantName: String = "",
+    existingPlantId: String = "",
     onBack: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -87,9 +87,9 @@ fun AddProductScreen(
     var isLoading by remember { mutableStateOf(false) }
     var existingImageUrl by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(editMode, existingPlantName) {
-        if (editMode) {
-            val product = ProductManager.getUserProducts().find { it.name == existingPlantName }
+    LaunchedEffect(editMode, existingPlantId) {
+        if (editMode && existingPlantId.isNotEmpty()) {
+            val product = ProductManager.getUserProducts().find { it.id == existingPlantId }
             if (product != null) {
                 name = product.name
                 priceText = product.price.replace("$", "").trim()
@@ -206,10 +206,8 @@ fun AddProductScreen(
                                 OutlinedTextField(
                                     value = priceText, 
                                     onValueChange = { input ->
-                                        // Filtro estricto: solo números y un único punto
                                         val filtered = input.filter { it.isDigit() || it == '.' }
                                         if (filtered.count { it == '.' } <= 1) {
-                                            // Si hay punto, máximo 2 decimales
                                             if (filtered.contains(".")) {
                                                 val parts = filtered.split(".")
                                                 if (parts.size == 1 || parts[1].length <= 2) {
@@ -252,31 +250,41 @@ fun AddProductScreen(
                     
                     if (isLoading) {
                         CircularProgressIndicator(color = ColorNaranjaAccion)
+                        Text("Guardando...", fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
                     } else {
                         Button(
                             onClick = { 
                                 if (name.isNotBlank() && priceText.isNotBlank()) {
                                     isLoading = true
                                     CoroutineScope(Dispatchers.Main).launch {
-                                        ProductManager.addProduct(
+                                        val success = ProductManager.saveProduct(
+                                            context = context,
+                                            id = if (editMode) existingPlantId else null,
                                             name = name, 
                                             price = priceText, 
                                             category = category, 
                                             imageUri = selectedImageUri,
                                             stock = stockText.toIntOrNull() ?: 0,
-                                            description = description
+                                            description = description,
+                                            existingImageUrl = existingImageUrl
                                         )
-                                        Toast.makeText(context, "¡Producto guardado!", Toast.LENGTH_SHORT).show()
-                                        onBack()
+                                        isLoading = false
+                                        if (success) {
+                                            Toast.makeText(context, "¡Producto guardado exitosamente!", Toast.LENGTH_SHORT).show()
+                                            onBack()
+                                        } else {
+                                            Toast.makeText(context, "Error al guardar.", Toast.LENGTH_LONG).show()
+                                        }
                                     }
                                 } else {
                                     Toast.makeText(context, "Llena los campos obligatorios", Toast.LENGTH_SHORT).show()
                                 }
                             }, 
-                            modifier = Modifier.fillMaxWidth(), 
-                            colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion)
+                            modifier = Modifier.fillMaxWidth().height(48.dp), 
+                            colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
+                            shape = RoundedCornerShape(12.dp)
                         ) { 
-                            Text("Confirmar") 
+                            Text("Confirmar", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

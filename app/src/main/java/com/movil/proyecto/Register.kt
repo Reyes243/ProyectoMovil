@@ -129,6 +129,10 @@ fun RegisterScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 RegisterField("Contraseña", password, { password = it }, KeyboardType.Password, isPassword = true)
                 RegisterField("Confirmar Contraseña", confirmPassword, { confirmPassword = it }, KeyboardType.Password, isPassword = true)
 
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                PasswordRequirementsInfo(password)
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
@@ -142,26 +146,29 @@ fun RegisterScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             Toast.makeText(context, "La dirección es obligatoria", Toast.LENGTH_SHORT).show()
                         } else if (phone.length != 10 || !phone.all { it.isDigit() }) {
                             Toast.makeText(context, "Teléfono inválido (debe tener 10 números)", Toast.LENGTH_SHORT).show()
-                        } else if (password.length < 6) {
-                            Toast.makeText(context, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
-                        } else if (password != confirmPassword) {
-                            Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
                         } else {
-                            CoroutineScope(Dispatchers.Main).launch {
-                                val error = UserManager.registerUser(
-                                    user = UserData(
-                                        fullName = fullName,
-                                        email = email,
-                                        address = address,
-                                        phone = phone
-                                    ),
-                                    password = password
-                                )
-                                if (error == null) {
-                                    Toast.makeText(context, "¡Registro Exitoso! Inicia sesión", Toast.LENGTH_LONG).show()
-                                    onBack()
-                                } else {
-                                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                            val validationError = getPasswordValidationError(password)
+                            if (validationError != null) {
+                                Toast.makeText(context, validationError, Toast.LENGTH_LONG).show()
+                            } else if (password != confirmPassword) {
+                                Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
+                            } else {
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    val error = UserManager.registerUser(
+                                        user = UserData(
+                                            fullName = fullName,
+                                            email = email,
+                                            address = address,
+                                            phone = phone
+                                        ),
+                                        password = password
+                                    )
+                                    if (error == null) {
+                                        Toast.makeText(context, "¡Registro Exitoso! Inicia sesión", Toast.LENGTH_LONG).show()
+                                        onBack()
+                                    } else {
+                                        Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             }
                         }
@@ -206,6 +213,41 @@ fun RegisterField(label: String, value: String, onValueChange: (String) -> Unit,
             shape = RoundedCornerShape(14.dp)
         )
     }
+}
+
+@Composable
+fun PasswordRequirementsInfo(password: String) {
+    val hasMinLength = password.length >= 8
+    val hasUpper = password.any { it.isUpperCase() }
+    val hasLower = password.any { it.isLowerCase() }
+    val hasDigit = password.any { it.isDigit() }
+    val hasSpecial = password.any { !it.isLetterOrDigit() }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+        RequirementItem("Mínimo 8 caracteres", hasMinLength)
+        RequirementItem("Una mayúscula y una minúscula", hasUpper && hasLower)
+        RequirementItem("Un número", hasDigit)
+        RequirementItem("Un carácter especial (@#$%.*)", hasSpecial)
+    }
+}
+
+@Composable
+fun RequirementItem(text: String, met: Boolean) {
+    Text(
+        text = "${if (met) "✓" else "○"} $text",
+        color = if (met) Color(0xFFADD9B3) else ColorCremaCampos.copy(alpha = 0.6f),
+        fontSize = 11.sp,
+        fontWeight = if (met) FontWeight.Bold else FontWeight.Normal
+    )
+}
+
+fun getPasswordValidationError(password: String): String? {
+    if (password.length < 8) return "La contraseña debe tener al menos 8 caracteres"
+    if (!password.any { it.isUpperCase() }) return "Falta una letra mayúscula"
+    if (!password.any { it.isLowerCase() }) return "Falta una letra minúscula"
+    if (!password.any { it.isDigit() }) return "Falta al menos un número"
+    if (!password.any { !it.isLetterOrDigit() }) return "Falta un carácter especial (@#$%^&+=!)"
+    return null
 }
 
 @Preview(showBackground = true)

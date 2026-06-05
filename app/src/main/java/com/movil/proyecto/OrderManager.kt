@@ -90,7 +90,6 @@ object OrderManager {
         try {
             val docRef = db.collection("compras").add(orderMap).await()
             
-            // Usar ID para actualizar stock
             for (item in items) {
                 ProductManager.updateProductSales(item.id, item.quantity)
             }

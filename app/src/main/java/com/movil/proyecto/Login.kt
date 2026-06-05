@@ -149,8 +149,11 @@ fun LoginScreen(
 
                 Button(
                     onClick = {
+                        val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
                         if (email.isBlank() || password.isBlank()) {
                             Toast.makeText(context, "Por favor, llena los campos", Toast.LENGTH_SHORT).show()
+                        } else if (!email.matches(emailPattern.toRegex())) {
+                            Toast.makeText(context, "Formato de correo inválido", Toast.LENGTH_SHORT).show()
                         } else {
                             // Ejecutamos en una corrutina porque loginUser ahora es 'suspend'
                             CoroutineScope(Dispatchers.Main).launch {

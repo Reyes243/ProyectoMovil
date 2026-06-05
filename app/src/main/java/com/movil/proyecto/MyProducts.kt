@@ -62,10 +62,10 @@ class MyProducts : ComponentActivity() {
                         val intent = Intent(this, AddProduct::class.java)
                         startActivity(intent)
                     },
-                    onEditProduct = { name ->
+                    onEditProduct = { id ->
                         val intent = Intent(this, AddProduct::class.java).apply {
                             putExtra("EDIT_MODE", true)
-                            putExtra("PLANT_NAME", name)
+                            putExtra("PLANT_ID", id)
                         }
                         startActivity(intent)
                     }
@@ -151,7 +151,7 @@ fun MyProductsScreen(
                     items(userProducts) { product ->
                         UserProductRow(
                             product, 
-                            onEdit = { onEditProduct(product.name) }, 
+                            onEdit = { onEditProduct(product.id) },
                             onDelete = { 
                                 CoroutineScope(Dispatchers.Main).launch {
                                     ProductManager.deleteProduct(product.name)

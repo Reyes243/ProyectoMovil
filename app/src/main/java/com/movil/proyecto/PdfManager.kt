@@ -11,10 +11,11 @@ import android.graphics.pdf.PdfDocument
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.FileOutputStream
+import java.io.OutputStream
 import java.util.Locale
 
 object PdfManager {
@@ -111,25 +112,28 @@ object PdfManager {
                 }
                 val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
                 if (uri != null) {
-                    resolver.openOutputStream(uri).use { outputStream ->
-                        pdfDocument.writeTo(outputStream as FileOutputStream)
+                    resolver.openOutputStream(uri)?.use { outputStream ->
+                        pdfDocument.writeTo(outputStream)
                     }
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Ticket descargado en la carpeta de Descargas", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Ticket guardado en Descargas", Toast.LENGTH_LONG).show()
                     }
                 }
             } else {
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) downloadsDir.mkdirs()
                 val file = java.io.File(downloadsDir, fileName)
-                pdfDocument.writeTo(FileOutputStream(file))
+                val outputStream = java.io.FileOutputStream(file)
+                pdfDocument.writeTo(outputStream)
+                outputStream.close()
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Ticket guardado en Descargas", Toast.LENGTH_LONG).show()
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("PdfManager", "Error PDF: ${e.message}")
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Error al descargar: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Error al descargar ticket", Toast.LENGTH_SHORT).show()
             }
         } finally {
             pdfDocument.close()
