@@ -144,7 +144,15 @@ fun RegisterScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         } else if (password != confirmPassword) {
                             Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
                         } else {
-                            val success = UserManager.registerUser(UserData(fullName, email, password, address, phone))
+                            val success = UserManager.registerUser(
+                                UserData(
+                                    fullName = fullName,
+                                    email = email,
+                                    password = password,
+                                    address = address,
+                                    phone = phone
+                                )
+                            )
                             if (success) {
                                 Toast.makeText(context, "¡Registro Exitoso! Inicia sesión", Toast.LENGTH_LONG).show()
                                 onBack()

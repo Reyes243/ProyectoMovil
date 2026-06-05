@@ -1,13 +1,30 @@
 
 package com.movil.proyecto
 
+import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
+import com.movil.proyecto.db.AppDatabase
+import com.movil.proyecto.db.CartEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 data class CartItemData(val name: String, val price: String, val quantity: Int, val imageRes: Int)
 
 object CartManager {
     private val _items = mutableStateListOf<CartItemData>()
     val items: List<CartItemData> get() = _items
+
+    private lateinit var db: AppDatabase
+
+    fun init(context: Context) {
+        db = AppDatabase.getDatabase(context)
+        // Cargar carrito desde DB al iniciar
+        CoroutineScope(Dispatchers.IO).launch {
+            // Lógica para cargar carrito si es persistente entre sesiones de app cerrada
+        }
+    }
 
     fun addPlant(name: String, price: String, quantity: Int, imageRes: Int) {
         val existingItem = _items.find { it.name == name }

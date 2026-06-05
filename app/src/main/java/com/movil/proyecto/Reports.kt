@@ -6,7 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -60,7 +59,9 @@ fun ReportsScreen(
     var selectedTab by remember { mutableStateOf(0) }
     var startDate by remember { mutableStateOf("01/05/2026") }
     var endDate by remember { mutableStateOf("01/06/2026") }
-    val orders = OrderManager.orders
+    
+    val userOrders = OrderManager.orders
+    val userProducts = ProductManager.getUserProducts().sortedByDescending { it.salesCount }
 
     Scaffold(
         topBar = {
@@ -96,92 +97,34 @@ fun ReportsScreen(
 
             // Tabs
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ReportTabButton("Ventas", selectedTab == 0, modifier = Modifier.weight(1f)) { selectedTab = 0 }
-                ReportTabButton("Productos más vendidos", selectedTab == 1, modifier = Modifier.weight(1f)) { selectedTab = 1 }
-                ReportTabButton("Clientes con más compras", selectedTab == 2, modifier = Modifier.weight(1f)) { selectedTab = 2 }
+                ReportTabButton("Mis Compras", selectedTab == 0, modifier = Modifier.weight(1f)) { selectedTab = 0 }
+                ReportTabButton("Mis Ventas", selectedTab == 1, modifier = Modifier.weight(1f)) { selectedTab = 1 }
+                ReportTabButton("Más Vendidos", selectedTab == 2, modifier = Modifier.weight(1f)) { selectedTab = 2 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Filtros de Periodo
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
-            ) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Periodo", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = ColorVerdeOlivaOscuro)
                     Spacer(modifier = Modifier.height(12.dp))
-                    
                     ReportPeriodField("Inicio", startDate) { startDate = it }
                     ReportPeriodField("Fin", endDate) { endDate = it }
-                    
                     Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Button(
-                        onClick = {},
-                        modifier = Modifier.fillMaxWidth().height(40.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Confirmar", fontWeight = FontWeight.Bold)
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = {}, modifier = Modifier.weight(1f).height(40.dp), colors = ButtonDefaults.buttonColors(containerColor = ColorVerdeOlivaOscuro), shape = RoundedCornerShape(8.dp)) {
-                            Text("CSV")
-                        }
-                        Button(onClick = {}, modifier = Modifier.weight(1f).height(40.dp), colors = ButtonDefaults.buttonColors(containerColor = ColorVerdeOlivaOscuro), shape = RoundedCornerShape(8.dp)) {
-                            Text("PDF")
-                        }
-                    }
+                    Button(onClick = {}, modifier = Modifier.fillMaxWidth().height(40.dp), colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion), shape = RoundedCornerShape(8.dp)) { Text("Confirmar", fontWeight = FontWeight.Bold) }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Tabla de Reporte
-            Card(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)
-            ) {
+            Card(modifier = Modifier.fillMaxWidth().weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        TableHeadItem("Fecha", Modifier.weight(1.5f))
-                        TableHeadItem("Folio", Modifier.weight(0.8f))
-                        TableHeadItem("Cliente", Modifier.weight(1f))
-                        TableHeadItem("Total", Modifier.weight(1f))
-                    }
-                    HorizontalDivider(color = ColorVerdeOlivaOscuro.copy(alpha = 0.2f))
-                    
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        items(orders) { order ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                TableCellItem(order.date.split(" ").first(), Modifier.weight(1.5f))
-                                TableCellItem(order.id.takeLast(4), Modifier.weight(0.8f))
-                                TableCellItem(UserManager.currentUser?.fullName?.split(" ")?.first() ?: "Cliente", Modifier.weight(1f))
-                                TableCellItem("$ ${String.format("%.2f", order.total)}", Modifier.weight(1f), isBold = true)
-                            }
-                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = ColorFondoVerdeClaro.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Total del periodo", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("$ ${String.format("%.2f", orders.sumOf { it.total })}", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
-                        }
+                    when (selectedTab) {
+                        0 -> ReportTable(title = "Compras", data = userOrders.map { ReportRowData(it.date.split(" ").first(), it.id.takeLast(4), "Yo", "$ ${String.format("%.2f", it.total)}") }, total = userOrders.sumOf { it.total })
+                        1 -> ReportTable(title = "Ventas", data = emptyList(), total = 0.0) // Simulación ventas
+                        2 -> BestSellersList(userProducts)
                     }
                 }
             }
@@ -191,22 +134,73 @@ fun ReportsScreen(
 }
 
 @Composable
+fun ReportTable(title: String, data: List<ReportRowData>, total: Double) {
+    Column {
+        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            TableHeadItem("Fecha", Modifier.weight(1.5f))
+            TableHeadItem("Folio", Modifier.weight(0.8f))
+            TableHeadItem("Sujeto", Modifier.weight(1f))
+            TableHeadItem("Total", Modifier.weight(1f))
+        }
+        HorizontalDivider(color = ColorVerdeOlivaOscuro.copy(alpha = 0.2f))
+        
+        if (data.isEmpty()) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text("No hay registros de $title", color = Color.Gray)
+            }
+        } else {
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(data) { row ->
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        TableCellItem(row.col1, Modifier.weight(1.5f))
+                        TableCellItem(row.col2, Modifier.weight(0.8f))
+                        TableCellItem(row.col3, Modifier.weight(1f))
+                        TableCellItem(row.col4, Modifier.weight(1f), isBold = true)
+                    }
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(modifier = Modifier.fillMaxWidth(), color = ColorFondoVerdeClaro.copy(alpha = 0.3f), shape = RoundedCornerShape(8.dp)) {
+                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Total acumulado", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("$ ${String.format("%.2f", total)}", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BestSellersList(products: List<PlantItem>) {
+    Column {
+        Text("Productos que has subido", fontWeight = FontWeight.Bold, color = ColorVerdeOlivaOscuro, modifier = Modifier.padding(bottom = 8.dp))
+        HorizontalDivider()
+        if (products.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No has subido productos aún.", color = Color.Gray)
+            }
+        } else {
+            LazyColumn {
+                items(products) { product ->
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(product.name, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        Text("${product.salesCount} ventas", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorNaranjaAccion)
+                    }
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                }
+            }
+        }
+    }
+}
+
+data class ReportRowData(val col1: String, val col2: String, val col3: String, val col4: String)
+
+@Composable
 fun ReportTabButton(text: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        color = if (selected) ColorVerdeOlivaOscuro else Color.White,
-        shape = RoundedCornerShape(12.dp),
-        modifier = modifier.clickable { onClick() }.height(44.dp),
-        shadowElevation = if (selected) 2.dp else 0.dp
-    ) {
+    Surface(color = if (selected) ColorVerdeOlivaOscuro else Color.White, shape = RoundedCornerShape(12.dp), modifier = modifier.clickable { onClick() }.height(44.dp), shadowElevation = if (selected) 2.dp else 0.dp) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(4.dp)) {
-            Text(
-                text = text,
-                fontSize = 9.sp,
-                color = if (selected) Color.White else Color.Black,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                lineHeight = 11.sp
-            )
+            Text(text = text, fontSize = 9.sp, color = if (selected) Color.White else Color.Black, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = 11.sp)
         }
     }
 }
@@ -215,15 +209,7 @@ fun ReportTabButton(text: String, selected: Boolean, modifier: Modifier = Modifi
 fun ReportPeriodField(label: String, value: String, onValueChange: (String) -> Unit) {
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
         Text(label, fontSize = 12.sp, color = Color.Gray)
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth().height(42.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White),
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
-        )
+        OutlinedTextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth().height(42.dp), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp))
     }
 }
 

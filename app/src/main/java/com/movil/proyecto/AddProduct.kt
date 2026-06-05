@@ -3,14 +3,18 @@ package com.movil.proyecto
 
 import android.content.Intent
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,10 +74,19 @@ fun AddProductScreen(
     val existingProduct = if (editMode) ProductManager.catalog.find { it.name == existingPlantName } else null
 
     var name by remember { mutableStateOf(existingProduct?.name ?: "") }
-    var price by remember { mutableStateOf(existingProduct?.price ?: "") }
-    var description by remember { mutableStateOf("") } // Podría extenderse PlantItem para incluir descripción
+    var priceText by remember { mutableStateOf(existingProduct?.price?.replace("$", "")?.trim() ?: "") }
+    var description by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(existingProduct?.category ?: "PLANTAS DE INTERIOR") }
     var expanded by remember { mutableStateOf(false) }
+
+    // Launcher para Galería o Cámara
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) Toast.makeText(context, "Imagen seleccionada de galería", Toast.LENGTH_SHORT).show()
+    }
+    
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) Toast.makeText(context, "Foto tomada con éxito", Toast.LENGTH_SHORT).show()
+    }
 
     Scaffold(
         topBar = {
@@ -120,8 +134,11 @@ fun AddProductScreen(
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)) {
                 Column(modifier = Modifier.padding(20.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ProductImagePlaceholder(Modifier.weight(1f))
-                        ProductImagePlaceholder(Modifier.weight(1f))
+                        ProductImagePlaceholder(Modifier.weight(1f)) { galleryLauncher.launch("image/*") }
+                        ProductImagePlaceholder(Modifier.weight(1f)) { 
+                            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                            cameraLauncher.launch(intent)
+                        }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     
@@ -158,19 +175,29 @@ fun AddProductScreen(
                         }
                     }
 
-                    AddProductField("Precio", price, { price = it }, "Ej. $ 250.00")
+                    AddProductField(
+                        label = "Precio", 
+                        value = if (priceText.isEmpty()) "" else "$ $priceText", 
+                        onValueChange = { 
+                            val digits = it.filter { char -> char.isDigit() }
+                            priceText = digits
+                        }, 
+                        placeholder = "$ 0.00",
+                        keyboardType = KeyboardType.Number
+                    )
                     
                     AddProductField("Descripción", description, { description = it }, "Detalles del producto...")
 
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { 
-                            if (name.isNotBlank() && price.isNotBlank()) {
+                            if (name.isNotBlank() && priceText.isNotBlank()) {
+                                val finalPrice = "$ $priceText.00"
                                 if (editMode) {
-                                    ProductManager.updateProduct(existingPlantName, name, price, category)
+                                    ProductManager.updateProduct(existingPlantName, name, finalPrice, category)
                                     Toast.makeText(context, "Producto actualizado", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    ProductManager.addProduct(name, price, category)
+                                    ProductManager.addProduct(name, finalPrice, category)
                                     Toast.makeText(context, "Producto agregado", Toast.LENGTH_SHORT).show()
                                 }
                                 onBack()
@@ -190,17 +217,33 @@ fun AddProductScreen(
 }
 
 @Composable
-fun ProductImagePlaceholder(modifier: Modifier = Modifier) {
-    Surface(modifier = modifier.aspectRatio(1f), color = Color.White.copy(alpha = 0.5f), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))) {
-        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray) }
+fun ProductImagePlaceholder(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Surface(
+        modifier = modifier.aspectRatio(1f).clickable { onClick() }, 
+        color = Color.White.copy(alpha = 0.5f), 
+        shape = RoundedCornerShape(12.dp), 
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+    ) {
+        Box(contentAlignment = Alignment.Center) { 
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray)
+                Text("Cargar", fontSize = 10.sp, color = Color.Gray)
+            }
+        }
     }
 }
 
 @Composable
-fun AddProductField(label: String, value: String, onValueChange: (String) -> Unit, placeholder: String) {
+fun AddProductField(label: String, value: String, onValueChange: (String) -> Unit, placeholder: String, keyboardType: KeyboardType = KeyboardType.Text) {
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
         Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = ColorVerdeOlivaOscuro)
-        OutlinedTextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth(), placeholder = { Text(placeholder, fontSize = 12.sp) }, shape = RoundedCornerShape(12.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White))
+        OutlinedTextField(
+            value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth(), 
+            placeholder = { Text(placeholder, fontSize = 12.sp) }, 
+            shape = RoundedCornerShape(12.dp), 
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White)
+        )
     }
 }
 

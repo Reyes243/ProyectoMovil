@@ -1,12 +1,19 @@
 
 package com.movil.proyecto
 
+import android.content.Context
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.movil.proyecto.db.AppDatabase
+import com.movil.proyecto.db.UserEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 data class UserData(
+    val id: Int = 0,
     val fullName: String,
     val email: String,
     val password: String,
@@ -15,31 +22,50 @@ data class UserData(
 )
 
 object UserManager {
-    private val _users = mutableStateListOf<UserData>()
     var currentUser by mutableStateOf<UserData?>(null)
         private set
     
     val isLoggedIn: Boolean get() = currentUser != null
 
-    init {
-        // Usuario por defecto para pruebas
-        _users.add(UserData("Usuario Prueba", "test@gmail.com", "123456", "Calle Principal #123", "6121234567"))
+    private lateinit var db: AppDatabase
+
+    fun init(context: Context) {
+        db = AppDatabase.getDatabase(context)
     }
 
-    fun registerUser(user: UserData): Boolean {
-        if (_users.any { it.email == user.email }) {
-            return false
-        }
-        _users.add(user)
-        return true
+    fun registerUser(user: UserData): Boolean = runBlocking(Dispatchers.IO) {
+        val existing = db.userDao().getUserByEmail(user.email)
+        if (existing != null) return@runBlocking false
+        
+        val newUserId = db.userDao().register(
+            UserEntity(
+                nombre = user.fullName,
+                apellidos = "",
+                email = user.email,
+                password = user.password,
+                rol = "cliente",
+                direccion = user.address,
+                telefono = user.phone
+            )
+        )
+        return@runBlocking newUserId > 0
     }
 
-    fun loginUser(email: String, password: String): UserData? {
-        val user = _users.find { it.email == email && it.password == password }
-        if (user != null) {
-            currentUser = user
+    fun loginUser(email: String, password: String): UserData? = runBlocking(Dispatchers.IO) {
+        val entity = db.userDao().login(email, password)
+        if (entity != null) {
+            val userData = UserData(
+                id = entity.usuario_id,
+                fullName = entity.nombre ?: "",
+                email = entity.email ?: "",
+                password = entity.password ?: "",
+                address = entity.direccion ?: "",
+                phone = entity.telefono ?: ""
+            )
+            currentUser = userData
+            return@runBlocking userData
         }
-        return user
+        return@runBlocking null
     }
 
     fun logout() {
@@ -48,11 +74,17 @@ object UserManager {
 
     fun updateUser(fullName: String, address: String, phone: String) {
         currentUser?.let { user ->
-            val index = _users.indexOfFirst { it.email == user.email }
-            if (index != -1) {
-                val updatedUser = user.copy(fullName = fullName, address = address, phone = phone)
-                _users[index] = updatedUser
-                currentUser = updatedUser
+            CoroutineScope(Dispatchers.IO).launch {
+                val entity = db.userDao().getUserByEmail(user.email)
+                entity?.let {
+                    val updatedEntity = it.copy(
+                        nombre = fullName,
+                        direccion = address,
+                        telefono = phone
+                    )
+                    db.userDao().updateUser(updatedEntity)
+                    currentUser = user.copy(fullName = fullName, address = address, phone = phone)
+                }
             }
         }
     }

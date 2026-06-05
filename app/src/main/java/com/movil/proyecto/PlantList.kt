@@ -49,6 +49,7 @@ class PlantList : ComponentActivity() {
                         val intent = Intent(this, Login::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         startActivity(intent)
+                        finish()
                     },
                     onPlantClick = { plantName ->
                         val intent = Intent(this, PlantDetail::class.java).apply {
@@ -184,7 +185,8 @@ data class PlantItem(
     val price: String, 
     val imageRes: Int, 
     val category: String = "",
-    val isUserAdded: Boolean = false
+    val isUserAdded: Boolean = false,
+    var salesCount: Int = 0
 )
 
 @Preview(showBackground = true)
