@@ -32,15 +32,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.movil.proyecto.ui.theme.*
 
 class MyProducts : ComponentActivity() {
+    private var refreshTrigger = mutableStateOf(0)
+
+    override fun onResume() {
+        super.onResume()
+        refreshTrigger.value++
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             ProyectoMovilTheme {
                 MyProductsScreen(
+                    refreshKey = refreshTrigger.value,
                     onBack = { finish() },
                     onLogout = { 
                         UserManager.logout()
@@ -68,6 +77,7 @@ class MyProducts : ComponentActivity() {
 
 @Composable
 fun MyProductsScreen(
+    refreshKey: Int = 0,
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onAddProduct: () -> Unit,
@@ -75,7 +85,7 @@ fun MyProductsScreen(
 ) {
     var userProducts by remember { mutableStateOf(emptyList<PlantItem>()) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshKey) {
         userProducts = ProductManager.getUserProducts()
     }
 
@@ -165,7 +175,21 @@ fun UserProductRow(product: PlantItem, onEdit: () -> Unit, onDelete: () -> Unit)
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(modifier = Modifier.size(60.dp), shape = RoundedCornerShape(8.dp), color = Color.White) {
-                Image(painter = painterResource(id = product.imageRes), null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                if (!product.imageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = product.imageUrl,
+                        null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = if (product.imageRes != 0) product.imageRes else R.drawable.logo),
+                        null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {

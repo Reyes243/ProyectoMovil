@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 data class UserData(
-    val id: String = "", // En Firebase usamos el UID (letras y números)
+    val id: String = "", 
     val fullName: String = "",
     val email: String = "",
     val address: String = "",
@@ -29,10 +29,8 @@ object UserManager {
     private val db by lazy { FirebaseFirestore.getInstance() }
 
     fun init(context: Context) {
-        // Firebase se inicializa solo, pero si hay una sesión activa la recuperamos
         val firebaseUser = auth.currentUser
         if (firebaseUser != null) {
-            // Intentamos cargar los datos del usuario si ya estaba logueado
             loadUserData(firebaseUser.uid)
         }
     }
@@ -48,8 +46,6 @@ object UserManager {
                         address = doc.getString("direccion") ?: "",
                         phone = doc.getString("telefono") ?: ""
                     )
-                    // Una vez cargado el usuario, cargamos su carrito y pedidos
-                    CartManager.loadCartFromDb()
                     OrderManager.loadOrders()
                 }
             }
@@ -58,11 +54,9 @@ object UserManager {
     suspend fun registerUser(user: UserData, password: String): String? {
         return withContext(Dispatchers.IO) {
             try {
-                // 1. Crear usuario en Firebase Auth
                 val result = auth.createUserWithEmailAndPassword(user.email, password).await()
                 val uid = result.user?.uid ?: return@withContext "Error al obtener UID"
 
-                // 2. Guardar datos extras en Firestore
                 val userMap = hashMapOf(
                     "nombre" to user.fullName,
                     "email" to user.email,
@@ -72,7 +66,7 @@ object UserManager {
                 )
                 db.collection("usuarios").document(uid).set(userMap).await()
                 
-                null // Éxito
+                null 
             } catch (e: Exception) {
                 e.message ?: "Error desconocido en el registro"
             }
@@ -85,7 +79,6 @@ object UserManager {
                 val result = auth.signInWithEmailAndPassword(email, password).await()
                 val uid = result.user?.uid ?: return@withContext null
                 
-                // Cargar datos desde Firestore
                 val doc = db.collection("usuarios").document(uid).get().await()
                 if (doc.exists()) {
                     val userData = UserData(
@@ -97,7 +90,6 @@ object UserManager {
                     )
                     withContext(Dispatchers.Main) {
                         currentUser = userData
-                        CartManager.loadCartFromDb()
                         OrderManager.loadOrders()
                     }
                     userData
@@ -114,7 +106,7 @@ object UserManager {
     fun logout() {
         auth.signOut()
         currentUser = null
-        CartManager.clearCartItemsOnly()
+        CartManager.clearCart()
         OrderManager.clearOrders()
     }
 

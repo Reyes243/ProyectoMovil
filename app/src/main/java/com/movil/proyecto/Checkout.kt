@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -59,13 +60,19 @@ class Checkout : ComponentActivity() {
                     },
                     onConfirm = {
                         CoroutineScope(Dispatchers.Main).launch {
-                            OrderManager.addOrder(CartManager.items, CartManager.getTotal())
-                            Toast.makeText(this@Checkout, "¡Compra realizada con éxito!", Toast.LENGTH_LONG).show()
-                            CartManager.clearCart()
-                            val intent = Intent(this@Checkout, Home::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                            startActivity(intent)
-                            finish()
+                            val order = OrderManager.addOrder(CartManager.items, CartManager.getTotal())
+                            if (order != null) {
+                                Toast.makeText(this@Checkout, "¡Compra realizada con éxito!", Toast.LENGTH_LONG).show()
+                                // Ya no descargamos el ticket automáticamente aquí.
+                                // El usuario lo hará desde su sección de compras.
+                                CartManager.clearCart()
+                                val intent = Intent(this@Checkout, Home::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                                startActivity(intent)
+                                finish()
+                            } else {
+                                Toast.makeText(this@Checkout, "Error al procesar la compra", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     onNavigateToAccount = {
@@ -173,7 +180,12 @@ fun CheckoutScreen(
                     cartItems.forEach { item ->
                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Surface(modifier = Modifier.size(50.dp), shape = RoundedCornerShape(8.dp), color = Color.White) {
-                                Image(painter = painterResource(id = item.imageRes), null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                if (!item.imageUrl.isNullOrEmpty()) {
+                                    AsyncImage(model = item.imageUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                } else {
+                                    val resId = if (item.imageRes != 0) item.imageRes else R.drawable.logo
+                                    Image(painter = painterResource(id = resId), null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                }
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {

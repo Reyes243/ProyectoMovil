@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.movil.proyecto.ui.theme.*
 
 class Cart : ComponentActivity() {
@@ -192,12 +193,21 @@ fun CartItemRow(item: CartItemData, onRemove: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(modifier = Modifier.size(60.dp), shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.5f)) { 
-                Image(
-                    painter = painterResource(id = item.imageRes), 
-                    null, 
-                    modifier = Modifier.fillMaxSize(), 
-                    contentScale = ContentScale.Crop
-                ) 
+                if (!item.imageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = item.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = if (item.imageRes != 0) item.imageRes else R.drawable.logo), 
+                        null, 
+                        modifier = Modifier.fillMaxSize(), 
+                        contentScale = ContentScale.Crop
+                    ) 
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

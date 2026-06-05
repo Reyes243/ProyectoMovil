@@ -2,6 +2,7 @@
 package com.movil.proyecto
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.Toast
@@ -10,6 +11,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -29,12 +31,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -74,21 +77,32 @@ fun AddProductScreen(
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
-    val existingProduct = if (editMode) ProductManager.catalog.find { it.name == existingPlantName } else null
-
-    var name by remember { mutableStateOf(existingProduct?.name ?: "") }
-    var priceText by remember { mutableStateOf(existingProduct?.price?.replace("$", "")?.trim() ?: "") }
+    var name by remember { mutableStateOf("") }
+    var priceText by remember { mutableStateOf("") }
+    var stockText by remember { mutableStateOf("10") }
     var description by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(existingProduct?.category ?: "PLANTAS DE INTERIOR") }
+    var category by remember { mutableStateOf("PLANTAS DE INTERIOR") }
     var expanded by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var existingImageUrl by remember { mutableStateOf<String?>(null) }
 
-    // Launcher para Galería o Cámara
-    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) Toast.makeText(context, "Imagen seleccionada de galería", Toast.LENGTH_SHORT).show()
+    LaunchedEffect(editMode, existingPlantName) {
+        if (editMode) {
+            val product = ProductManager.getUserProducts().find { it.name == existingPlantName }
+            if (product != null) {
+                name = product.name
+                priceText = product.price.replace("$", "").trim()
+                stockText = product.stock.toString()
+                description = product.description
+                category = product.category
+                existingImageUrl = product.imageUrl
+            }
+        }
     }
-    
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) Toast.makeText(context, "Foto tomada con éxito", Toast.LENGTH_SHORT).show()
+
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) selectedImageUri = uri
     }
 
     Scaffold(
@@ -136,13 +150,20 @@ fun AddProductScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)) {
                 Column(modifier = Modifier.padding(20.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ProductImagePlaceholder(Modifier.weight(1f)) { galleryLauncher.launch("image/*") }
-                        ProductImagePlaceholder(Modifier.weight(1f)) { 
-                            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                            cameraLauncher.launch(intent)
+                    
+                    Box(modifier = Modifier.size(120.dp).background(Color.White.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).clickable { galleryLauncher.launch("image/*") }, contentAlignment = Alignment.Center) {
+                        if (selectedImageUri != null) {
+                            AsyncImage(model = selectedImageUri, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        } else if (existingImageUrl != null) {
+                             AsyncImage(model = existingImageUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray)
+                                Text("Foto", fontSize = 10.sp, color = Color.Gray)
+                            }
                         }
                     }
+                    
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     AddProductField("Nombre", name, { name = it }, "Ej. Monstera")
@@ -178,55 +199,87 @@ fun AddProductScreen(
                         }
                     }
 
-                    AddProductField(
-                        label = "Precio", 
-                        value = if (priceText.isEmpty()) "" else "$ $priceText", 
-                        onValueChange = { 
-                            val digits = it.filter { char -> char.isDigit() }
-                            priceText = digits
-                        }, 
-                        placeholder = "$ 0.00",
-                        keyboardType = KeyboardType.Number
-                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                Text("Precio", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = ColorVerdeOlivaOscuro)
+                                OutlinedTextField(
+                                    value = priceText, 
+                                    onValueChange = { input ->
+                                        // Filtro estricto: solo números y un único punto
+                                        val filtered = input.filter { it.isDigit() || it == '.' }
+                                        if (filtered.count { it == '.' } <= 1) {
+                                            // Si hay punto, máximo 2 decimales
+                                            if (filtered.contains(".")) {
+                                                val parts = filtered.split(".")
+                                                if (parts.size == 1 || parts[1].length <= 2) {
+                                                    priceText = filtered
+                                                }
+                                            } else {
+                                                priceText = filtered
+                                            }
+                                        }
+                                    }, 
+                                    modifier = Modifier.fillMaxWidth(),
+                                    prefix = { Text("$ ", fontWeight = FontWeight.Bold, color = Color.Black) },
+                                    placeholder = { Text("0", fontSize = 12.sp) }, 
+                                    shape = RoundedCornerShape(12.dp), 
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = Color.White, 
+                                        unfocusedContainerColor = Color.White,
+                                        focusedTextColor = Color.Black,
+                                        unfocusedTextColor = Color.Black
+                                    )
+                                )
+                            }
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            AddProductField(
+                                label = "Stock", 
+                                value = stockText, 
+                                onValueChange = { if (it.all { c -> c.isDigit() }) stockText = it }, 
+                                placeholder = "10",
+                                keyboardType = KeyboardType.Number
+                            )
+                        }
+                    }
                     
                     AddProductField("Descripción", description, { description = it }, "Detalles del producto...")
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = { 
-                            if (name.isNotBlank() && priceText.isNotBlank()) {
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    ProductManager.addProduct(name, priceText, category)
-                                    Toast.makeText(context, "Producto agregado a la nube", Toast.LENGTH_SHORT).show()
-                                    onBack()
+                    
+                    if (isLoading) {
+                        CircularProgressIndicator(color = ColorNaranjaAccion)
+                    } else {
+                        Button(
+                            onClick = { 
+                                if (name.isNotBlank() && priceText.isNotBlank()) {
+                                    isLoading = true
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        ProductManager.addProduct(
+                                            name = name, 
+                                            price = priceText, 
+                                            category = category, 
+                                            imageUri = selectedImageUri,
+                                            stock = stockText.toIntOrNull() ?: 0,
+                                            description = description
+                                        )
+                                        Toast.makeText(context, "¡Producto guardado!", Toast.LENGTH_SHORT).show()
+                                        onBack()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Llena los campos obligatorios", Toast.LENGTH_SHORT).show()
                                 }
-                            } else {
-                                Toast.makeText(context, "Llena los campos obligatorios", Toast.LENGTH_SHORT).show()
-                            }
-                        }, 
-                        modifier = Modifier.fillMaxWidth(), 
-                        colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion)
-                    ) { 
-                        Text("Confirmar") 
+                            }, 
+                            modifier = Modifier.fillMaxWidth(), 
+                            colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion)
+                        ) { 
+                            Text("Confirmar") 
+                        }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun ProductImagePlaceholder(modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        modifier = modifier.aspectRatio(1f).clickable { onClick() }, 
-        color = Color.White.copy(alpha = 0.5f), 
-        shape = RoundedCornerShape(12.dp), 
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
-    ) {
-        Box(contentAlignment = Alignment.Center) { 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray)
-                Text("Cargar", fontSize = 10.sp, color = Color.Gray)
             }
         }
     }
@@ -244,10 +297,4 @@ fun AddProductField(label: String, value: String, onValueChange: (String) -> Uni
             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White)
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun AddProductPreview() {
-    ProyectoMovilTheme { AddProductScreen(onBack = {}, onLogout = {}) }
 }

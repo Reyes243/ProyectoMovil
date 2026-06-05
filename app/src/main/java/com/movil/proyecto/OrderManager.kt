@@ -4,7 +4,6 @@ package com.movil.proyecto
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,6 +43,7 @@ object OrderManager {
                         date = doc.getString("fecha") ?: "",
                         items = itemsList.map { 
                             CartItemData(
+                                id = it["id"] as? String ?: "",
                                 name = it["nombre"] as? String ?: "",
                                 price = it["precio"] as? String ?: "",
                                 quantity = (it["cantidad"] as? Long)?.toInt() ?: 0,
@@ -52,8 +52,8 @@ object OrderManager {
                         },
                         total = doc.getDouble("total") ?: 0.0
                     )
-                }.sortedByDescending { it.date } // Ordenamos en memoria para evitar el índice por ahora
-
+                }.sortedByDescending { it.date }
+                
                 withContext(Dispatchers.Main) {
                     _orders.clear()
                     _orders.addAll(domainOrders)
@@ -64,10 +64,19 @@ object OrderManager {
         }
     }
 
-    suspend fun addOrder(items: List<CartItemData>, total: Double) = withContext(Dispatchers.IO) {
-        val user = UserManager.currentUser ?: return@withContext
-        val dateStr = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+    suspend fun addOrder(items: List<CartItemData>, total: Double): OrderData? = withContext(Dispatchers.IO) {
+        val user = UserManager.currentUser ?: return@withContext null
+        val dateStr = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.US).format(java.util.Date())
         
+        val itemsMap = items.map { 
+            mapOf(
+                "id" to it.id,
+                "nombre" to it.name,
+                "precio" to it.price,
+                "cantidad" to it.quantity
+            )
+        }
+
         val orderMap = hashMapOf(
             "fecha" to dateStr,
             "total" to total,
@@ -75,20 +84,28 @@ object OrderManager {
             "nombre_envio" to user.fullName,
             "direccion_envio" to user.address,
             "telefono_envio" to user.phone,
-            "items" to items.map { 
-                mapOf(
-                    "nombre" to it.name,
-                    "precio" to it.price,
-                    "cantidad" to it.quantity
-                )
-            }
+            "items" to itemsMap
         )
 
         try {
-            db.collection("compras").add(orderMap).await()
-            loadOrders() // Recargar para ver la nueva compra
+            val docRef = db.collection("compras").add(orderMap).await()
+            
+            // Usar ID para actualizar stock
+            for (item in items) {
+                ProductManager.updateProductSales(item.id, item.quantity)
+            }
+
+            loadOrders()
+            
+            OrderData(
+                id = docRef.id,
+                date = dateStr,
+                items = items,
+                total = total
+            )
         } catch (e: Exception) {
             e.printStackTrace()
+            null
         }
     }
 

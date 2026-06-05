@@ -28,6 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import com.movil.proyecto.ui.theme.*
 
 class Reports : ComponentActivity() {
@@ -57,14 +59,19 @@ fun ReportsScreen(
     onLogout: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    var startDate by remember { mutableStateOf("01/05/2026") }
-    var endDate by remember { mutableStateOf("01/06/2026") }
+    var startDate by remember { mutableStateOf("01/10/2024") }
+    var endDate by remember { mutableStateOf("01/11/2024") }
     
     val userOrders = OrderManager.orders
     var userProducts by remember { mutableStateOf(emptyList<PlantItem>()) }
+    var isLoading by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        userProducts = ProductManager.getUserProducts().sortedByDescending { it.salesCount }
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == 2 || selectedTab == 1) {
+            isLoading = true
+            userProducts = ProductManager.getUserProducts().sortedByDescending { it.salesCount }
+            isLoading = false
+        }
     }
 
     Scaffold(
@@ -125,10 +132,16 @@ fun ReportsScreen(
             // Tabla de Reporte
             Card(modifier = Modifier.fillMaxWidth().weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    when (selectedTab) {
-                        0 -> ReportTable(title = "Compras", data = userOrders.map { ReportRowData(it.date.split(" ").first(), it.id.takeLast(4), "Yo", "$ ${String.format("%.2f", it.total)}") }, total = userOrders.sumOf { it.total })
-                        1 -> ReportTable(title = "Ventas", data = emptyList(), total = 0.0) // Simulación ventas
-                        2 -> BestSellersList(userProducts)
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = ColorVerdeOlivaOscuro)
+                        }
+                    } else {
+                        when (selectedTab) {
+                            0 -> ReportTable(title = "Compras", data = userOrders.map { ReportRowData(it.date.split(" ").first(), it.id.takeLast(4), "Yo", "$ ${String.format("%.2f", it.total)}") }, total = userOrders.sumOf { it.total })
+                            1 -> MySalesList(userProducts)
+                            2 -> BestSellersList(userProducts)
+                        }
                     }
                 }
             }
@@ -139,12 +152,14 @@ fun ReportsScreen(
 
 @Composable
 fun ReportTable(title: String, data: List<ReportRowData>, total: Double) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     Column {
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            TableHeadItem("Fecha", Modifier.weight(1.5f))
-            TableHeadItem("Folio", Modifier.weight(0.8f))
-            TableHeadItem("Sujeto", Modifier.weight(1f))
-            TableHeadItem("Total", Modifier.weight(1f))
+            TableHeadItem("Fecha", Modifier.weight(1.2f))
+            TableHeadItem("Folio", Modifier.weight(0.7f))
+            TableHeadItem("Total", Modifier.weight(0.9f))
+            TableHeadItem("Acción", Modifier.weight(1.2f))
         }
         HorizontalDivider(color = ColorVerdeOlivaOscuro.copy(alpha = 0.2f))
         
@@ -156,10 +171,26 @@ fun ReportTable(title: String, data: List<ReportRowData>, total: Double) {
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(data) { row ->
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        TableCellItem(row.col1, Modifier.weight(1.5f))
-                        TableCellItem(row.col2, Modifier.weight(0.8f))
-                        TableCellItem(row.col3, Modifier.weight(1f))
-                        TableCellItem(row.col4, Modifier.weight(1f), isBold = true)
+                        TableCellItem(row.col1, Modifier.weight(1.2f))
+                        TableCellItem(row.col2, Modifier.weight(0.7f))
+                        TableCellItem(row.col4, Modifier.weight(0.9f), isBold = true)
+                        
+                        Button(
+                            onClick = {
+                                val order = OrderManager.orders.find { it.id.takeLast(4) == row.col2 }
+                                if (order != null) {
+                                    scope.launch {
+                                        PdfManager.generatePurchaseTicket(context, order)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1.2f).height(30.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = ColorVerdeOlivaOscuro),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text("DESCARGAR TICKET", fontSize = 8.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                        }
                     }
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
                 }
@@ -176,17 +207,41 @@ fun ReportTable(title: String, data: List<ReportRowData>, total: Double) {
 }
 
 @Composable
-fun BestSellersList(products: List<PlantItem>) {
-    Column {
-        Text("Productos que has subido", fontWeight = FontWeight.Bold, color = ColorVerdeOlivaOscuro, modifier = Modifier.padding(bottom = 8.dp))
+fun MySalesList(products: List<PlantItem>) {
+     Column {
+        Text("Tus Ventas por Producto", fontWeight = FontWeight.Bold, color = ColorVerdeOlivaOscuro, modifier = Modifier.padding(bottom = 8.dp))
         HorizontalDivider()
         if (products.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No has subido productos aún.", color = Color.Gray)
+                Text("No tienes productos a la venta.", color = Color.Gray)
             }
         } else {
             LazyColumn {
                 items(products) { product ->
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(product.name, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        Text("${product.salesCount} unidades vendidas", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorNaranjaAccion)
+                    }
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BestSellersList(products: List<PlantItem>) {
+    Column {
+        Text("Ranking de tus Productos más Vendidos", fontWeight = FontWeight.Bold, color = ColorVerdeOlivaOscuro, modifier = Modifier.padding(bottom = 8.dp))
+        HorizontalDivider()
+        val sorted = products.filter { it.salesCount > 0 }.sortedByDescending { it.salesCount }
+        if (sorted.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Aún no tienes ventas registradas.", color = Color.Gray)
+            }
+        } else {
+            LazyColumn {
+                items(sorted) { product ->
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(product.name, fontSize = 12.sp, modifier = Modifier.weight(1f))
                         Text("${product.salesCount} ventas", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorNaranjaAccion)

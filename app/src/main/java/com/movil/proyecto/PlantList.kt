@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.movil.proyecto.ui.theme.*
 
 class PlantList : ComponentActivity() {
@@ -171,7 +172,21 @@ fun PlantCard(plant: PlantItem, onDetailClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = ColorCremaCampos), elevation = CardDefaults.cardElevation(2.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
             Surface(modifier = Modifier.fillMaxWidth().aspectRatio(1f), shape = RoundedCornerShape(12.dp), color = Color.White) {
-                Image(painter = painterResource(id = plant.imageRes), contentDescription = plant.name, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                if (!plant.imageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = plant.imageUrl,
+                        contentDescription = plant.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = if (plant.imageRes != 0) plant.imageRes else R.drawable.logo),
+                        contentDescription = plant.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(text = plant.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Black, lineHeight = 13.sp)
@@ -187,10 +202,14 @@ fun PlantCard(plant: PlantItem, onDetailClick: () -> Unit) {
 data class PlantItem(
     val name: String, 
     val price: String, 
-    val imageRes: Int, 
+    val imageRes: Int = 0, 
+    val imageUrl: String? = null,
     val category: String = "",
     val isUserAdded: Boolean = false,
-    var salesCount: Int = 0
+    var salesCount: Int = 0,
+    val stock: Int = 10,
+    val description: String = "Producto de alta calidad para el bienestar de tu hogar.",
+    val id: String = ""
 )
 
 @Preview(showBackground = true)

@@ -27,6 +27,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.movil.proyecto.ui.theme.*
 
 class OrderTicket : ComponentActivity() {
@@ -59,6 +62,8 @@ fun OrderTicketScreen(
     onLogout: () -> Unit
 ) {
     val order = OrderManager.getOrderById(orderId) ?: OrderManager.orders.firstOrNull()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -119,7 +124,17 @@ fun OrderTicketScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         TicketRow("Total:", "$ ${String.format("%.2f", order.total)}", isTotal = true)
                         Spacer(modifier = Modifier.height(32.dp))
-                        Button(onClick = { /* PDF */ }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion)) { Text("Imprimir PDF") }
+                        Button(
+                            onClick = { 
+                                scope.launch {
+                                    PdfManager.generatePurchaseTicket(context, order)
+                                }
+                            }, 
+                            modifier = Modifier.fillMaxWidth(), 
+                            colors = ButtonDefaults.buttonColors(containerColor = ColorNaranjaAccion)
+                        ) { 
+                            Text("DESCARGAR TICKET") 
+                        }
                     }
                 }
             } else {
