@@ -61,7 +61,14 @@ class Account : ComponentActivity() {
                                 startActivity(intent)
                                 finish()
                             }
-                            "ELIMINAR CUENTA" -> { /* Lógica */ }
+                            "ELIMINAR CUENTA" -> {
+                                UserManager.deleteAccount {
+                                    val intent = Intent(this, Home::class.java)
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                    startActivity(intent)
+                                    finish()
+                                }
+                            }
                         }
                     }
                 )
@@ -69,6 +76,7 @@ class Account : ComponentActivity() {
         }
     }
 }
+
 
 @Composable
 fun AccountScreen(

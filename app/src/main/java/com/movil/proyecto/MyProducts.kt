@@ -18,7 +18,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,10 +53,10 @@ class MyProducts : ComponentActivity() {
                         val intent = Intent(this, AddProduct::class.java)
                         startActivity(intent)
                     },
-                    onEditProduct = { plantName ->
+                    onEditProduct = { name ->
                         val intent = Intent(this, AddProduct::class.java).apply {
                             putExtra("EDIT_MODE", true)
-                            putExtra("PLANT_NAME", plantName)
+                            putExtra("PLANT_NAME", name)
                         }
                         startActivity(intent)
                     }
@@ -70,7 +73,11 @@ fun MyProductsScreen(
     onAddProduct: () -> Unit,
     onEditProduct: (String) -> Unit
 ) {
-    val userProducts = ProductManager.getUserProducts()
+    var userProducts by remember { mutableStateOf(emptyList<PlantItem>()) }
+
+    LaunchedEffect(Unit) {
+        userProducts = ProductManager.getUserProducts()
+    }
 
     Scaffold(
         topBar = {
@@ -105,7 +112,6 @@ fun MyProductsScreen(
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
-            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -133,7 +139,16 @@ fun MyProductsScreen(
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(userProducts) { product ->
-                        UserProductRow(product, onEdit = { onEditProduct(product.name) }, onDelete = { ProductManager.deleteProduct(product.name) })
+                        UserProductRow(
+                            product, 
+                            onEdit = { onEditProduct(product.name) }, 
+                            onDelete = { 
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    ProductManager.deleteProduct(product.name)
+                                    userProducts = userProducts.filter { it.name != product.name }
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -152,16 +167,13 @@ fun UserProductRow(product: PlantItem, onEdit: () -> Unit, onDelete: () -> Unit)
             Surface(modifier = Modifier.size(60.dp), shape = RoundedCornerShape(8.dp), color = Color.White) {
                 Image(painter = painterResource(id = product.imageRes), null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(product.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text(product.category, fontSize = 11.sp, color = Color.Gray)
-                Text(product.price, fontWeight = FontWeight.ExtraBold, color = ColorVerdeOlivaOscuro)
+                Text(product.price, color = Color.Gray, fontSize = 12.sp)
             }
-            Row {
-                IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, null, tint = Color.Blue) }
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, null, tint = Color.Red) }
-            }
+            IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, null, tint = Color.Blue) }
+            IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, null, tint = Color.Red) }
         }
     }
 }
@@ -169,5 +181,5 @@ fun UserProductRow(product: PlantItem, onEdit: () -> Unit, onDelete: () -> Unit)
 @Preview(showBackground = true)
 @Composable
 fun MyProductsPreview() {
-    ProyectoMovilTheme { MyProductsScreen({}, {}, {}, {}) }
+    ProyectoMovilTheme { MyProductsScreen(onBack = {}, onLogout = {}, onAddProduct = {}, onEditProduct = {}) }
 }

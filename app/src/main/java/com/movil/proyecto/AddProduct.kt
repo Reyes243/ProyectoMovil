@@ -35,6 +35,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.movil.proyecto.ui.theme.*
 
 class AddProduct : ComponentActivity() {
@@ -192,15 +195,11 @@ fun AddProductScreen(
                     Button(
                         onClick = { 
                             if (name.isNotBlank() && priceText.isNotBlank()) {
-                                val finalPrice = "$ $priceText.00"
-                                if (editMode) {
-                                    ProductManager.updateProduct(existingPlantName, name, finalPrice, category)
-                                    Toast.makeText(context, "Producto actualizado", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    ProductManager.addProduct(name, finalPrice, category)
-                                    Toast.makeText(context, "Producto agregado", Toast.LENGTH_SHORT).show()
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    ProductManager.addProduct(name, priceText, category)
+                                    Toast.makeText(context, "Producto agregado a la nube", Toast.LENGTH_SHORT).show()
+                                    onBack()
                                 }
-                                onBack()
                             } else {
                                 Toast.makeText(context, "Llena los campos obligatorios", Toast.LENGTH_SHORT).show()
                             }

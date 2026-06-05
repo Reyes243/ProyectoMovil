@@ -28,6 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.movil.proyecto.ui.theme.ColorCremaCampos
 import com.movil.proyecto.ui.theme.ColorFondoVerdeClaro
 import com.movil.proyecto.ui.theme.ColorNaranjaAccion
@@ -149,13 +152,16 @@ fun LoginScreen(
                         if (email.isBlank() || password.isBlank()) {
                             Toast.makeText(context, "Por favor, llena los campos", Toast.LENGTH_SHORT).show()
                         } else {
-                            val user = UserManager.loginUser(email, password)
-                            if (user != null) {
-                                Toast.makeText(context, "¡Bienvenido ${user.fullName}!", Toast.LENGTH_SHORT).show()
-                                val intent = Intent(context, Home::class.java)
-                                context.startActivity(intent)
-                            } else {
-                                Toast.makeText(context, "Correo o contraseña incorrectos", Toast.LENGTH_SHORT).show()
+                            // Ejecutamos en una corrutina porque loginUser ahora es 'suspend'
+                            CoroutineScope(Dispatchers.Main).launch {
+                                val user = UserManager.loginUser(email, password)
+                                if (user != null) {
+                                    Toast.makeText(context, "¡Bienvenido ${user.fullName}!", Toast.LENGTH_SHORT).show()
+                                    val intent = Intent(context, Home::class.java)
+                                    context.startActivity(intent)
+                                } else {
+                                    Toast.makeText(context, "Correo o contraseña incorrectos", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     },

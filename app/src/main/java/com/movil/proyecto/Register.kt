@@ -38,6 +38,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.movil.proyecto.ui.theme.ColorCremaCampos
 import com.movil.proyecto.ui.theme.ColorFondoVerdeClaro
 import com.movil.proyecto.ui.theme.ColorNaranjaAccion
@@ -144,20 +147,22 @@ fun RegisterScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         } else if (password != confirmPassword) {
                             Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
                         } else {
-                            val success = UserManager.registerUser(
-                                UserData(
-                                    fullName = fullName,
-                                    email = email,
-                                    password = password,
-                                    address = address,
-                                    phone = phone
+                            CoroutineScope(Dispatchers.Main).launch {
+                                val error = UserManager.registerUser(
+                                    user = UserData(
+                                        fullName = fullName,
+                                        email = email,
+                                        address = address,
+                                        phone = phone
+                                    ),
+                                    password = password
                                 )
-                            )
-                            if (success) {
-                                Toast.makeText(context, "¡Registro Exitoso! Inicia sesión", Toast.LENGTH_LONG).show()
-                                onBack()
-                            } else {
-                                Toast.makeText(context, "Este correo ya está registrado", Toast.LENGTH_SHORT).show()
+                                if (error == null) {
+                                    Toast.makeText(context, "¡Registro Exitoso! Inicia sesión", Toast.LENGTH_LONG).show()
+                                    onBack()
+                                } else {
+                                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                }
                             }
                         }
                     },

@@ -10,6 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
+import kotlinx.coroutines.flow.collect
+import java.util.Locale
+
 data class CartItemData(val name: String, val price: String, val quantity: Int, val imageRes: Int)
 
 object CartManager {
@@ -20,17 +23,22 @@ object CartManager {
 
     fun init(context: Context) {
         db = AppDatabase.getDatabase(context)
-        // Cargar carrito desde DB al iniciar
-        CoroutineScope(Dispatchers.IO).launch {
-            // Lógica para cargar carrito si es persistente entre sesiones de app cerrada
-        }
+        loadCartFromDb()
+    }
+
+    fun loadCartFromDb() {
+        val userId = UserManager.currentUser?.id ?: return
+        // Por ahora deshabilitamos Room para evitar conflictos de tipos con Firebase
+        // Pronto migraremos el carrito también a la nube
+        _items.clear()
     }
 
     fun addPlant(name: String, price: String, quantity: Int, imageRes: Int) {
         val existingItem = _items.find { it.name == name }
         if (existingItem != null) {
             val index = _items.indexOf(existingItem)
-            _items[index] = existingItem.copy(quantity = existingItem.quantity + quantity)
+            val newQuantity = existingItem.quantity + quantity
+            _items[index] = existingItem.copy(quantity = newQuantity)
         } else {
             _items.add(CartItemData(name, price, quantity, imageRes))
         }
@@ -44,6 +52,12 @@ object CartManager {
         _items.clear()
     }
 
+    fun clearCartItemsOnly() {
+        _items.clear()
+    }
+
+
+
     fun getTotal(): Double {
         return _items.sumOf { 
             val priceValue = it.price.replace("$", "").replace(",", "").trim().toDoubleOrNull() ?: 0.0
@@ -51,3 +65,4 @@ object CartManager {
         }
     }
 }
+

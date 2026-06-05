@@ -5,20 +5,18 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.movil.proyecto.db.AppDatabase
-import com.movil.proyecto.db.UserEntity
-import kotlinx.coroutines.CoroutineScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 data class UserData(
-    val id: Int = 0,
-    val fullName: String,
-    val email: String,
-    val password: String,
-    val address: String,
-    val phone: String
+    val id: String = "", // En Firebase usamos el UID (letras y números)
+    val fullName: String = "",
+    val email: String = "",
+    val address: String = "",
+    val phone: String = ""
 )
 
 object UserManager {
@@ -27,65 +25,120 @@ object UserManager {
     
     val isLoggedIn: Boolean get() = currentUser != null
 
-    private lateinit var db: AppDatabase
+    private val auth by lazy { FirebaseAuth.getInstance() }
+    private val db by lazy { FirebaseFirestore.getInstance() }
 
     fun init(context: Context) {
-        db = AppDatabase.getDatabase(context)
-    }
-
-    fun registerUser(user: UserData): Boolean = runBlocking(Dispatchers.IO) {
-        val existing = db.userDao().getUserByEmail(user.email)
-        if (existing != null) return@runBlocking false
-        
-        val newUserId = db.userDao().register(
-            UserEntity(
-                nombre = user.fullName,
-                apellidos = "",
-                email = user.email,
-                password = user.password,
-                rol = "cliente",
-                direccion = user.address,
-                telefono = user.phone
-            )
-        )
-        return@runBlocking newUserId > 0
-    }
-
-    fun loginUser(email: String, password: String): UserData? = runBlocking(Dispatchers.IO) {
-        val entity = db.userDao().login(email, password)
-        if (entity != null) {
-            val userData = UserData(
-                id = entity.usuario_id,
-                fullName = entity.nombre ?: "",
-                email = entity.email ?: "",
-                password = entity.password ?: "",
-                address = entity.direccion ?: "",
-                phone = entity.telefono ?: ""
-            )
-            currentUser = userData
-            return@runBlocking userData
+        // Firebase se inicializa solo, pero si hay una sesión activa la recuperamos
+        val firebaseUser = auth.currentUser
+        if (firebaseUser != null) {
+            // Intentamos cargar los datos del usuario si ya estaba logueado
+            loadUserData(firebaseUser.uid)
         }
-        return@runBlocking null
+    }
+
+    private fun loadUserData(uid: String) {
+        db.collection("usuarios").document(uid).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    currentUser = UserData(
+                        id = uid,
+                        fullName = doc.getString("nombre") ?: "",
+                        email = doc.getString("email") ?: "",
+                        address = doc.getString("direccion") ?: "",
+                        phone = doc.getString("telefono") ?: ""
+                    )
+                    // Una vez cargado el usuario, cargamos su carrito y pedidos
+                    CartManager.loadCartFromDb()
+                    OrderManager.loadOrders()
+                }
+            }
+    }
+
+    suspend fun registerUser(user: UserData, password: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                // 1. Crear usuario en Firebase Auth
+                val result = auth.createUserWithEmailAndPassword(user.email, password).await()
+                val uid = result.user?.uid ?: return@withContext "Error al obtener UID"
+
+                // 2. Guardar datos extras en Firestore
+                val userMap = hashMapOf(
+                    "nombre" to user.fullName,
+                    "email" to user.email,
+                    "direccion" to user.address,
+                    "telefono" to user.phone,
+                    "rol" to "cliente"
+                )
+                db.collection("usuarios").document(uid).set(userMap).await()
+                
+                null // Éxito
+            } catch (e: Exception) {
+                e.message ?: "Error desconocido en el registro"
+            }
+        }
+    }
+
+    suspend fun loginUser(email: String, password: String): UserData? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = auth.signInWithEmailAndPassword(email, password).await()
+                val uid = result.user?.uid ?: return@withContext null
+                
+                // Cargar datos desde Firestore
+                val doc = db.collection("usuarios").document(uid).get().await()
+                if (doc.exists()) {
+                    val userData = UserData(
+                        id = uid,
+                        fullName = doc.getString("nombre") ?: "",
+                        email = doc.getString("email") ?: "",
+                        address = doc.getString("direccion") ?: "",
+                        phone = doc.getString("telefono") ?: ""
+                    )
+                    withContext(Dispatchers.Main) {
+                        currentUser = userData
+                        CartManager.loadCartFromDb()
+                        OrderManager.loadOrders()
+                    }
+                    userData
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
     }
 
     fun logout() {
+        auth.signOut()
         currentUser = null
+        CartManager.clearCartItemsOnly()
+        OrderManager.clearOrders()
+    }
+
+    fun deleteAccount(onSuccess: () -> Unit) {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("usuarios").document(uid).delete()
+            .addOnSuccessListener {
+                auth.currentUser?.delete()?.addOnSuccessListener {
+                    logout()
+                    onSuccess()
+                }
+            }
     }
 
     fun updateUser(fullName: String, address: String, phone: String) {
-        currentUser?.let { user ->
-            CoroutineScope(Dispatchers.IO).launch {
-                val entity = db.userDao().getUserByEmail(user.email)
-                entity?.let {
-                    val updatedEntity = it.copy(
-                        nombre = fullName,
-                        direccion = address,
-                        telefono = phone
-                    )
-                    db.userDao().updateUser(updatedEntity)
-                    currentUser = user.copy(fullName = fullName, address = address, phone = phone)
-                }
+        val uid = auth.currentUser?.uid ?: return
+        val updates = hashMapOf<String, Any>(
+            "nombre" to fullName,
+            "direccion" to address,
+            "telefono" to phone
+        )
+        db.collection("usuarios").document(uid).update(updates)
+            .addOnSuccessListener {
+                currentUser = currentUser?.copy(fullName = fullName, address = address, phone = phone)
             }
-        }
     }
 }

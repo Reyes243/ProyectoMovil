@@ -17,7 +17,11 @@ interface UserDao {
 
     @Update
     suspend fun updateUser(user: UserEntity)
+
+    @Delete
+    suspend fun deleteUser(user: UserEntity)
 }
+
 
 @Dao
 interface ProductDao {
@@ -38,7 +42,11 @@ interface ProductDao {
 
     @Query("SELECT * FROM producto WHERE nombre = :name LIMIT 1")
     suspend fun getProductByName(name: String): ProductEntity?
+
+    @Query("SELECT * FROM producto WHERE producto_id = :id LIMIT 1")
+    suspend fun getProductById(id: Int): ProductEntity?
 }
+
 
 @Dao
 interface OrderDao {
@@ -63,3 +71,22 @@ interface CategoryDao {
     @Insert
     suspend fun insertCategories(categories: List<CategoryEntity>)
 }
+
+@Dao
+interface CartDao {
+    @Query("SELECT * FROM carrito WHERE usuario_usuario_id = :userId")
+    fun getCartByUserId(userId: Int): Flow<List<CartEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCartItem(cart: CartEntity)
+
+    @Delete
+    suspend fun removeCartItem(cart: CartEntity)
+
+    @Query("DELETE FROM carrito WHERE usuario_usuario_id = :userId")
+    suspend fun clearCart(userId: Int)
+
+    @Query("SELECT * FROM carrito WHERE usuario_usuario_id = :userId AND producto_producto_id = :productId LIMIT 1")
+    suspend fun getCartItem(userId: Int, productId: Int): CartEntity?
+}
+

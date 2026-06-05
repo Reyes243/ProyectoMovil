@@ -61,7 +61,11 @@ fun ReportsScreen(
     var endDate by remember { mutableStateOf("01/06/2026") }
     
     val userOrders = OrderManager.orders
-    val userProducts = ProductManager.getUserProducts().sortedByDescending { it.salesCount }
+    var userProducts by remember { mutableStateOf(emptyList<PlantItem>()) }
+
+    LaunchedEffect(Unit) {
+        userProducts = ProductManager.getUserProducts().sortedByDescending { it.salesCount }
+    }
 
     Scaffold(
         topBar = {

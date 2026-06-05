@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "910262825052",
+    "project_id": "raiz-viva-6ba6d",
+    "storage_bucket": "raiz-viva-6ba6d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:910262825052:android:5c06ca6ca84836eb973699",
+        "android_client_info": {
+          "package_name": "com.movil.proyecto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7lWdT21FXXgRthzLuiPeiQAyk92JnyX0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

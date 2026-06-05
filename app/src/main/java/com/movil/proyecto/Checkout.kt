@@ -38,6 +38,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.movil.proyecto.ui.theme.*
 
 class Checkout : ComponentActivity() {
@@ -55,13 +58,15 @@ class Checkout : ComponentActivity() {
                         startActivity(intent)
                     },
                     onConfirm = {
-                        OrderManager.addOrder(CartManager.items, CartManager.getTotal())
-                        Toast.makeText(this, "¡Compra realizada con éxito!", Toast.LENGTH_LONG).show()
-                        CartManager.clearCart()
-                        val intent = Intent(this, Home::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                        startActivity(intent)
-                        finish()
+                        CoroutineScope(Dispatchers.Main).launch {
+                            OrderManager.addOrder(CartManager.items, CartManager.getTotal())
+                            Toast.makeText(this@Checkout, "¡Compra realizada con éxito!", Toast.LENGTH_LONG).show()
+                            CartManager.clearCart()
+                            val intent = Intent(this@Checkout, Home::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(intent)
+                            finish()
+                        }
                     },
                     onNavigateToAccount = {
                         val intent = Intent(this, Account::class.java)
