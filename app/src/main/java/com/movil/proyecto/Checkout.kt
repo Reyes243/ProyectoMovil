@@ -235,16 +235,10 @@ fun CheckoutScreen(
                             CheckoutField(
                                 label = "Expiración", 
                                 value = expiration, 
-                                onValueChange = { input ->
-                                    val cleaned = input.filter { it.isDigit() }.take(4)
-                                    expiration = if (cleaned.length >= 3) {
-                                        cleaned.substring(0, 2) + "/" + cleaned.substring(2)
-                                    } else {
-                                        cleaned
-                                    }
-                                }, 
+                                onValueChange = { if(it.length <= 4 && it.all { c -> c.isDigit() }) expiration = it }, 
                                 placeholder = "MM/AA",
-                                keyboardType = KeyboardType.Number
+                                keyboardType = KeyboardType.Number,
+                                visualTransformation = ExpiryDateTransformation()
                             )
                         }
                     }
@@ -292,7 +286,7 @@ fun CheckoutScreen(
             Button(
                 onClick = {
                     val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
-                    val expPattern = "^(0[1-9]|1[0-2])/([0-9]{2})$"
+                    val expPattern = "^(0[1-9]|1[0-2])([0-9]{2})$"
                     
                     if (email.isBlank() || !email.matches(emailPattern.toRegex())) {
                         Toast.makeText(context, "Correo inválido", Toast.LENGTH_SHORT).show()
@@ -304,10 +298,23 @@ fun CheckoutScreen(
                         Toast.makeText(context, "CVV inválido (3 dígitos)", Toast.LENGTH_SHORT).show()
                     } else if (!expiration.matches(expPattern.toRegex())) {
                         Toast.makeText(context, "Fecha de expiración inválida (MM/AA)", Toast.LENGTH_SHORT).show()
-                    } else if (billingAddress.isBlank() || city.isBlank() || postalCode.length != 5) {
-                        Toast.makeText(context, "Datos de facturación incompletos", Toast.LENGTH_SHORT).show()
                     } else {
-                        onConfirm()
+                        // Validación de fecha no pasada
+                        val month = expiration.substring(0, 2).toIntOrNull() ?: 0
+                        val yearShort = expiration.substring(2).toIntOrNull() ?: 0
+                        val yearFull = 2000 + yearShort
+                        
+                        val calendar = java.util.Calendar.getInstance()
+                        val curYear = calendar.get(java.util.Calendar.YEAR)
+                        val curMonth = calendar.get(java.util.Calendar.MONTH) + 1
+                        
+                        if (yearFull < curYear || (yearFull == curYear && month < curMonth)) {
+                            Toast.makeText(context, "La tarjeta ha expirado", Toast.LENGTH_SHORT).show()
+                        } else if (billingAddress.isBlank() || city.isBlank() || postalCode.length != 5) {
+                            Toast.makeText(context, "Datos de facturación incompletos", Toast.LENGTH_SHORT).show()
+                        } else {
+                            onConfirm()
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -330,7 +337,14 @@ fun PaymentSummaryRow(label: String, value: String) {
 }
 
 @Composable
-fun CheckoutField(label: String, value: String, onValueChange: (String) -> Unit, placeholder: String, keyboardType: KeyboardType = KeyboardType.Text) {
+fun CheckoutField(
+    label: String, 
+    value: String, 
+    onValueChange: (String) -> Unit, 
+    placeholder: String, 
+    keyboardType: KeyboardType = KeyboardType.Text,
+    visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None
+) {
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
         Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(4.dp))
@@ -339,8 +353,39 @@ fun CheckoutField(label: String, value: String, onValueChange: (String) -> Unit,
             placeholder = { Text(placeholder, fontSize = 12.sp, color = Color.Gray) },
             shape = RoundedCornerShape(8.dp),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            visualTransformation = visualTransformation,
             colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White, focusedBorderColor = ColorVerdeOlivaOscuro, unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f)),
             singleLine = true
+        )
+    }
+}
+
+class ExpiryDateTransformation : androidx.compose.ui.text.input.VisualTransformation {
+    override fun filter(text: androidx.compose.ui.text.AnnotatedString): androidx.compose.ui.text.input.TransformedText {
+        val trimmed = if (text.text.length >= 4) text.text.substring(0, 4) else text.text
+        var out = ""
+        for (i in trimmed.indices) {
+            out += trimmed[i]
+            if (i == 1) out += "/"
+        }
+
+        val offsetMapping = object : androidx.compose.ui.text.input.OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 1) return offset
+                if (offset <= 4) return offset + 1
+                return 5
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 2) return offset
+                if (offset <= 5) return offset - 1
+                return 4
+            }
+        }
+
+        return androidx.compose.ui.text.input.TransformedText(
+            androidx.compose.ui.text.AnnotatedString(out),
+            offsetMapping
         )
     }
 }
