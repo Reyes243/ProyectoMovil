@@ -6,7 +6,6 @@ import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
@@ -65,7 +64,7 @@ object ProductManager {
                     id = doc.id,
                     name = doc.getString("nombre")?.uppercase() ?: "SIN NOMBRE",
                     price = formatPrice(priceNum),
-                    imageUrl = doc.getString("imageUrl"),
+                    imageUrl = doc.getString("imageUrl"), // Aquí cargamos la URL de la nube
                     imageRes = 0,
                     category = doc.getString("categoria") ?: category.uppercase(),
                     isUserAdded = doc.getString("vendedor_id") != null,
@@ -92,10 +91,9 @@ object ProductManager {
         existingImageUrl: String? = null
     ): Boolean = withContext(Dispatchers.IO) {
         val priceValue = price.replace("$", "").replace(",", "").trim().toDoubleOrNull() ?: 0.0
-        
         var finalImageUrl: String? = existingImageUrl
         
-        // Si el usuario seleccionó una NUEVA imagen, la subimos
+        // CORRECCIÓN: Subida forzada y obtención de URL de descarga pública
         if (imageUri != null) {
             try {
                 val fileName = "productos/${UUID.randomUUID()}.jpg"
@@ -105,12 +103,16 @@ object ProductManager {
                 if (inputStream != null) {
                     val bytes = inputStream.readBytes()
                     inputStream.close()
+                    
+                    // Subimos los bytes
                     ref.putBytes(bytes).await()
+                    
+                    // ¡IMPORTANTE! Obtenemos la URL de descarga real (la que empieza con https)
                     finalImageUrl = ref.downloadUrl.await().toString()
-                    Log.d("ProductManager", "Nueva imagen subida: $finalImageUrl")
+                    Log.d("ProductManager", "URL de descarga generada: $finalImageUrl")
                 }
             } catch (e: Exception) {
-                Log.e("ProductManager", "Error al subir imagen: ${e.message}")
+                Log.e("ProductManager", "Error subiendo imagen: ${e.message}")
             }
         }
 
@@ -119,7 +121,7 @@ object ProductManager {
             "precio" to priceValue,
             "categoria" to category.uppercase(),
             "vendedor_id" to UserManager.currentUser?.id,
-            "imageUrl" to finalImageUrl,
+            "imageUrl" to finalImageUrl, // Guardamos la URL pública
             "estado" to "activo",
             "stock" to stock.toLong(),
             "descripcion" to description
@@ -127,18 +129,14 @@ object ProductManager {
 
         return@withContext try {
             if (id.isNullOrEmpty()) {
-                // Modo crear nuevo
                 productMap["ventas"] = 0L
                 db.collection("productos").add(productMap).await()
-                Log.d("ProductManager", "Producto creado exitosamente")
             } else {
-                // Modo editar: actualizamos el documento existente por su ID
                 db.collection("productos").document(id).update(productMap as Map<String, Any>).await()
-                Log.d("ProductManager", "Producto $id actualizado exitosamente")
             }
             true
         } catch (e: Exception) {
-            Log.e("ProductManager", "Error al guardar producto: ${e.message}")
+            Log.e("ProductManager", "Error Firestore: ${e.message}")
             false
         }
     }
@@ -151,12 +149,11 @@ object ProductManager {
                 val snapshot = transaction.get(docRef)
                 val currentStock = (snapshot.getLong("stock") ?: 0L)
                 val currentSales = (snapshot.getLong("ventas") ?: 0L)
-                
                 transaction.update(docRef, "stock", currentStock - quantity)
                 transaction.update(docRef, "ventas", currentSales + quantity)
             }.await()
         } catch (e: Exception) {
-            Log.e("ProductManager", "Error updating sales: ${e.message}")
+            Log.e("ProductManager", "Error stock: ${e.message}")
         }
     }
 
@@ -179,24 +176,20 @@ object ProductManager {
                     category = doc.getString("categoria") ?: "",
                     isUserAdded = true,
                     stock = doc.getLong("stock")?.toInt() ?: 0,
-                    description = doc.getString("descripcion") ?: "Producto de alta calidad para el bienestar de tu hogar.",
+                    description = doc.getString("descripcion") ?: "",
                     salesCount = doc.getLong("ventas")?.toInt() ?: 0
                 )
             }
         } catch (e: Exception) {
-            Log.e("ProductManager", "Error getUserProducts: ${e.message}")
             emptyList()
         }
     }
 
-    suspend fun deleteProduct(name: String) = withContext(Dispatchers.IO) {
+    suspend fun deleteProduct(productId: String) = withContext(Dispatchers.IO) {
         try {
-            val result = db.collection("productos").whereEqualTo("nombre", name.uppercase()).get().await()
-            for (doc in result.documents) {
-                db.collection("productos").document(doc.id).delete().await()
-            }
+            db.collection("productos").document(productId).delete().await()
         } catch (e: Exception) {
-            Log.e("ProductManager", "Error deleting: ${e.message}")
+            Log.e("ProductManager", "Error delete: ${e.message}")
         }
     }
 }
